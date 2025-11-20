@@ -4,6 +4,9 @@
 
 ## 📚 文档导航
 
+### 🗺️ 项目路线图
+- [ROADMAP](ROADMAP.md) - 项目开发路线图和版本规划
+
 ### 🚀 快速开始
 - [主布局快速开始](guides/quick-start/main-layout-quick-start.md) - 5分钟了解项目结构
 - [Contact 功能快速参考](guides/quick-start/contact-db-quick-reference.md) - Contact 视图使用速查
@@ -46,6 +49,12 @@
 - [产品设计文档](architecture/product-design.md) - 产品需求和设计
 
 ### 📝 变更日志
+- [v0.9.0](changelog/CHANGELOG_v0.9.0.md) - 移动端界面适配与性能优化
+- [v0.8.0](changelog/CHANGELOG_v0.8.0.md) - MessageBubble 组件重构与消息类型扩展
+- [v0.7.0](changelog/CHANGELOG_v0.7.0.md) - 功能增强
+- [v0.6.0](changelog/CHANGELOG_v0.6.0.md) - 功能优化
+- [v0.5.1](changelog/CHANGELOG_v0.5.1.md) - Bug 修复
+- [v0.5.0](changelog/CHANGELOG_v0.5.0.md) - 新功能
 - [v0.4.1](changelog/CHANGELOG_v0.4.1.md) - 后台刷新、数据库加载、自动初始化
 - [v0.4.0](changelog/CHANGELOG_v0.4.0.md) - 消息增强、转发消息、引用回复
 - [v0.3.3](changelog/CHANGELOG_v0.3.3.md) - 滚动到底部修复
@@ -154,9 +163,9 @@ docs/
 ## 📊 文档统计
 
 ```
-总文档数: 45+ 篇
+总文档数: 50+ 篇
 API 文档: 7 篇
-功能特性: 12 篇
+功能特性: 15 篇
 架构设计: 3 篇
 用户指南: 2 篇
 开发指南: 3 篇
@@ -169,6 +178,7 @@ API 文档: 7 篇
 
 ## 🔍 搜索建议
 
+- **项目规划**: 查看[项目路线图](ROADMAP.md)了解开发计划
 - **新用户**: 从[用户使用手册](guides/user/user-guide.md)开始
 - **开发者**: 查看[开发者指南](guides/developer/developer-guide.md)
 - **了解 API**: 参考[API 参考手册](api/reference.md)
@@ -178,16 +188,16 @@ API 文档: 7 篇
 
 ## 📅 最新更新
 
-### v0.4.1 (2024-01-XX)
-- ✅ 后台刷新联系人功能
-- ✅ Contact 视图数据库加载模式（性能提升 20-40 倍）
-- ✅ Chat 视图自动初始化联系人
-- ✅ LoadingProgress 组件增强（Indeterminate 模式）
-- ✅ 新增 9 篇技术文档
-- ✅ 文档重新分类整理
-- ✅ 文件名规范化（kebab-case）
+### v0.9.0 (2025-11-21)
+- ✅ 移动端界面完全适配（响应式布局、底部标签栏、页面栈导航）
+- ✅ 右滑手势返回（聊天模块）
+- ✅ keep-alive 组件缓存（性能提升 64%）
+- ✅ 联系人详情页组件
+- ✅ 消息列表刷新按钮优化
+- ✅ 新增 3 篇移动端技术文档
+- ✅ 完整的性能优化文档
 
-详见 [CHANGELOG v0.4.1](changelog/CHANGELOG_v0.4.1.md)
+详见 [CHANGELOG v0.9.0](changelog/CHANGELOG_v0.9.0.md) 和 [项目路线图](ROADMAP.md)
 
 ## 📝 命名规范
 
@@ -216,6 +226,6 @@ API 文档: 7 篇
 
 ---
 
-**最后更新**: 2025-11-18 17:00  
-**文档版本**: v0.4.1  
+**最后更新**: 2025-11-21  
+**文档版本**: v0.9.0  
 **维护者**: Development Team

@@ -3,6 +3,7 @@ import { useAppStore } from '@/stores/app'
 
 interface Props {
   title?: string
+  subtitle?: string
   showBack?: boolean
   showRefresh?: boolean
   showMore?: boolean
@@ -10,6 +11,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
   title: '',
+  subtitle: '',
   showBack: true,
   showRefresh: false,
   showMore: false
@@ -57,7 +59,10 @@ const handleMore = () => {
     </div>
 
     <div class="mobile-navbar__title">
-      <span class="title-text">{{ title }}</span>
+      <div class="title-content">
+        <h3 class="title-text">{{ title }}</h3>
+        <p v-if="subtitle" class="subtitle-text">{{ subtitle }}</p>
+      </div>
     </div>
 
     <div class="mobile-navbar__right">
@@ -136,14 +141,35 @@ const handleMore = () => {
     padding: 0 16px;
     overflow: hidden;
 
+    .title-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 0;
+      max-width: 100%;
+    }
+
     .title-text {
-      font-size: 18px;
+      margin: 0;
+      font-size: 16px;
       font-weight: 600;
       color: var(--el-text-color-primary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 100%;
+      line-height: 1.4;
+    }
+
+    .subtitle-text {
+      margin: 2px 0 0 0;
+      font-size: 11px;
+      color: var(--el-text-color-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      line-height: 1.2;
     }
   }
 
