@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { getMediaPlaceholder } from '../composables/utils'
 
 interface Props {
@@ -8,12 +9,17 @@ interface Props {
   md5?: string
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<{
   click: []
 }>()
 
+const showPreview = ref(false)
+
 const handleClick = () => {
+  if (props.showMediaResources && props.videoUrl) {
+    showPreview.value = true
+  }
   emit('click')
 }
 </script>
@@ -32,6 +38,19 @@ const handleClick = () => {
     </template>
     <span v-else class="media-placeholder">{{ getMediaPlaceholder(43) }}</span>
   </div>
+  
+  <!-- 视频预览对话框 -->
+  <el-dialog
+    v-model="showPreview"
+    :width="'90%'"
+    :style="{ maxWidth: '1200px' }"
+    align-center
+    destroy-on-close
+  >
+    <video v-if="videoUrl" :src="videoUrl" controls class="preview-video">
+      您的浏览器不支持视频播放
+    </video>
+  </el-dialog>
 </template>
 
 <style lang="scss" scoped>
@@ -40,21 +59,22 @@ const handleClick = () => {
   border-radius: 4px;
   overflow: hidden;
   position: relative;
-  max-width: 300px;
 
   .video-cover {
-    width: 100%;
-    height: 200px;
+    width: 240px;
+    height: 180px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    border-radius: 4px;
 
     .play-icon {
       font-size: 48px;
       color: #fff;
       opacity: 0.9;
+      transition: opacity 0.3s ease;
     }
 
     .video-duration {
@@ -74,7 +94,8 @@ const handleClick = () => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px;
+    width: 240px;
+    height: 180px;
     background-color: var(--el-fill-color-light);
     color: var(--el-text-color-secondary);
     font-size: 12px;
@@ -101,8 +122,16 @@ const handleClick = () => {
     }
   }
 
+  .preview-video {
+    width: 100%;
+    height: auto;
+    display: block;
+    background-color: #000;
+  }
+
   &:hover .play-icon {
     opacity: 1;
+    transform: scale(1.1);
   }
 }
 
