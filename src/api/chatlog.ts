@@ -5,7 +5,7 @@
 
 import { request } from '@/utils/request'
 import type { Message, MessageResponse } from '@/types/message'
-import type { ChatlogParams, SearchParams, PaginatedResponse } from '@/types/api'
+import type { ChatlogParams, SearchParams } from '@/types/api'
 
 /**
  * 将后端返回的消息数据转换为前端使用的 Message 格式
@@ -92,17 +92,14 @@ class ChatlogAPI {
 
   /**
    * 搜索消息
-   * GET /api/v1/chatlog/search
+   * GET /api/v1/chatlog
    * 
    * @param params 搜索参数
    * @returns 搜索结果
    */
-  async searchMessages(params: SearchParams): Promise<PaginatedResponse<Message>> {
-    const response = await request.get<PaginatedResponse<MessageResponse>>('/api/v1/chatlog/search', params)
-    return {
-      ...response,
-      items: transformMessages(response.items),
-    }
+  async searchMessages(params: SearchParams): Promise<Message[]> {
+    const responses = await request.get<MessageResponse[]>('/api/v1/chatlog', params)
+    return transformMessages(responses)
   }
 
   /**
@@ -262,7 +259,7 @@ class ChatlogAPI {
    * @param limit 返回数量
    * @returns 搜索结果
    */
-  searchInSession(keyword: string, talker: string, limit = 50): Promise<PaginatedResponse<Message>> {
+  searchInSession(keyword: string, talker: string, limit = 50): Promise<Message[]> {
     return this.searchMessages({
       keyword,
       talker,
@@ -278,7 +275,7 @@ class ChatlogAPI {
    * @param limit 返回数量
    * @returns 搜索结果
    */
-  globalSearch(keyword: string, type?: number, limit = 50): Promise<PaginatedResponse<Message>> {
+  globalSearch(keyword: string, type?: number, limit = 50): Promise<Message[]> {
     return this.searchMessages({
       keyword,
       type,
@@ -294,7 +291,7 @@ class ChatlogAPI {
    * @param limit 返回数量
    * @returns 搜索结果
    */
-  searchByType(type: number, talker?: string, limit = 50): Promise<PaginatedResponse<Message>> {
+  searchByType(type: number, talker?: string, limit = 50): Promise<Message[]> {
     return this.searchMessages({
       keyword: '',
       type,

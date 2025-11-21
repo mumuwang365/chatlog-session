@@ -1,92 +1,70 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useChatStore } from '@/stores/chat'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useSearchStore } from '@/stores/search'
 import { useSessionStore } from '@/stores/session'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import Avatar from '@/components/common/Avatar.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 import Loading from '@/components/common/Loading.vue'
 import Empty from '@/components/common/Empty.vue'
 import MessageBubble from '@/components/chat/MessageBubble.vue'
-import type { Message } from '@/types'
+import type { SearchType } from '@/stores/search'
+import type { Message, Contact } from '@/types'
 
-const chatStore = useChatStore()
+const searchStore = useSearchStore()
 const sessionStore = useSessionStore()
 const router = useRouter()
 
 // 状态
-const loading = ref(false)
 const searchText = ref('')
-const searchType = ref<'all' | 'message' | 'session'>('all')
-const searchScope = ref<'global' | 'session'>('global')
+const searchType = ref<SearchType>('chatroom')
 const selectedSessionId = ref<string>('')
-const dateRange = ref<[Date, Date] | null>(null)
 
-// 搜索结果
-const messageResults = ref<Message[]>([])
-const sessionResults = ref<any[]>([])
+// 初始化默认时间范围（最近一年）
+const getDefaultDateRange = (): [Date, Date] => {
+  const endDate = new Date()
+  const startDate = new Date()
+  startDate.setFullYear(endDate.getFullYear() - 1)
+  return [startDate, endDate]
+}
+
+const dateRange = ref<[Date, Date] | null>(getDefaultDateRange())
 
 // 计算属性
-const hasResults = computed(() => {
-  return messageResults.value.length > 0 || sessionResults.value.length > 0
-})
+const results = computed(() => searchStore.filteredResults)
+const stats = computed(() => searchStore.stats)
+const isLoading = computed(() => searchStore.isLoading)
+const hasResults = computed(() => searchStore.hasResults)
 
-const filteredMessageResults = computed(() => {
-  if (searchType.value === 'session') return []
-  return messageResults.value
-})
-
-const filteredSessionResults = computed(() => {
-  if (searchType.value === 'message') return []
-  return sessionResults.value
-})
-
-const stats = computed(() => ({
-  messages: messageResults.value.length,
-  sessions: sessionResults.value.length,
-  total: messageResults.value.length + sessionResults.value.length
-}))
+// 可用的会话列表（用于会话内搜索）
+const availableSessions = computed(() => sessionStore.sessions)
 
 // 执行搜索
 const performSearch = async () => {
-  if (!searchText.value.trim()) {
-    messageResults.value = []
-    sessionResults.value = []
+  if (!searchText.value.trim() && !dateRange.value) {
+    searchStore.clearResults()
     return
   }
 
-  loading.value = true
+  // 如果是聊天记录搜索，必须选择会话
+  if (searchType.value === 'message' && !selectedSessionId.value) {
+    ElMessage.warning('请先选择要搜索的会话')
+    return
+  }
 
   try {
-    // 搜索消息
-    if (searchType.value === 'all' || searchType.value === 'message') {
-      if (searchScope.value === 'global') {
-        // 全局搜索消息
-        await chatStore.searchMessages(searchText.value)
-        messageResults.value = chatStore.searchResults
-      } else if (selectedSessionId.value) {
-        // 会话内搜索
-        // 会话内搜索暂时使用全局搜索
-        await chatStore.searchMessages(searchText.value)
-        messageResults.value = chatStore.searchResults
-      }
-    }
-
-    // 搜索会话
-    if (searchType.value === 'all' || searchType.value === 'session') {
-      // 会话搜索暂时在前端过滤
-      const keyword = searchText.value.toLowerCase()
-      sessionResults.value = sessionStore.sessions.filter(s => 
-        s.name?.toLowerCase().includes(keyword) ||
-        s.talkerName?.toLowerCase().includes(keyword)
-      )
-    }
+    await searchStore.performSearch({
+      keyword: searchText.value,
+      type: searchType.value,
+      scope: 'session',
+      talker: selectedSessionId.value,
+      timeRange: dateRange.value,
+    })
   } catch (error) {
     console.error('搜索失败:', error)
     ElMessage.error('搜索失败，请重试')
-  } finally {
-    loading.value = false
   }
 }
 
@@ -99,13 +77,12 @@ const handleSearch = (value: string) => {
 // 清空搜索
 const clearSearch = () => {
   searchText.value = ''
-  messageResults.value = []
-  sessionResults.value = []
+  dateRange.value = null
+  searchStore.clearResults()
 }
 
 // 查看消息
 const viewMessage = (message: Message) => {
-  // 跳转到聊天页面并定位到该消息
   router.push({
     path: '/chat',
     query: {
@@ -115,33 +92,73 @@ const viewMessage = (message: Message) => {
   })
 }
 
-// 查看会话
-const viewSession = (session: any) => {
+// 查看群聊
+const viewChatroom = (chatroom: Contact) => {
   router.push({
     path: '/chat',
-    query: { talker: session.talker }
+    query: { talker: chatroom.wxid }
   })
 }
 
-// 监听搜索类型变化
-watch(searchType, () => {
-  if (searchText.value) {
-    performSearch()
-  }
-})
+// 查看联系人
+const viewContact = (contact: Contact) => {
+  router.push({
+    path: '/chat',
+    query: { talker: contact.wxid }
+  })
+}
 
-// 监听搜索范围变化
-watch(searchScope, () => {
-  if (searchText.value) {
+// 加载更多消息
+const loadMore = async () => {
+  if (!searchStore.hasMore || isLoading.value) {
+    return
+  }
+
+  try {
+    await searchStore.loadMoreMessages()
+  } catch (error) {
+    console.error('加载更多失败:', error)
+    ElMessage.error('加载更多失败')
+  }
+}
+
+// 监听搜索类型变化
+watch(searchType, (newType) => {
+  searchStore.setSearchType(newType)
+  // 切换到聊天记录搜索时，如果没有选择会话，清空结果
+  if (newType === 'message' && !selectedSessionId.value) {
+    searchStore.clearResults()
+    return
+  }
+  if (searchText.value || dateRange.value) {
     performSearch()
   }
 })
 
 // 监听选中会话变化
-watch(selectedSessionId, () => {
-  if (searchText.value && searchScope.value === 'session') {
+watch(selectedSessionId, (newTalker) => {
+  searchStore.setSelectedTalker(newTalker)
+  if (searchText.value) {
     performSearch()
   }
+})
+
+// 监听时间范围变化
+watch(dateRange, (newRange) => {
+  searchStore.setTimeRange(newRange)
+  // 如果清空了时间范围，恢复默认值（最近一年）
+  if (!newRange && searchType.value === 'message') {
+    dateRange.value = getDefaultDateRange()
+    return
+  }
+  if (searchText.value || newRange) {
+    performSearch()
+  }
+})
+
+// 组件挂载时重置搜索状态
+onMounted(() => {
+  searchStore.reset()
 })
 </script>
 
@@ -164,7 +181,7 @@ watch(selectedSessionId, () => {
         <!-- 搜索框 -->
         <SearchBar
           v-model="searchText"
-          placeholder="搜索消息或会话"
+          placeholder="搜索群聊、联系人或消息"
           size="large"
           autofocus
           class="main-search"
@@ -176,55 +193,59 @@ watch(selectedSessionId, () => {
           <div class="option-row">
             <label>搜索类型:</label>
             <el-radio-group v-model="searchType" size="small">
-              <el-radio-button label="all">全部</el-radio-button>
-              <el-radio-button label="message">消息</el-radio-button>
-              <el-radio-button label="session">会话</el-radio-button>
+              <el-radio-button value="chatroom">群聊</el-radio-button>
+              <el-radio-button value="contact">联系人</el-radio-button>
+              <el-radio-button value="message">聊天记录</el-radio-button>
             </el-radio-group>
           </div>
 
-          <div v-if="searchType !== 'session'" class="option-row">
-            <label>搜索范围:</label>
-            <el-radio-group v-model="searchScope" size="small">
-              <el-radio-button label="global">全局</el-radio-button>
-              <el-radio-button label="session">当前会话</el-radio-button>
-            </el-radio-group>
-          </div>
-
-          <div v-if="searchScope === 'session' && searchType !== 'session'" class="option-row">
+          <div v-if="searchType === 'message'" class="option-row">
             <label>选择会话:</label>
-            <el-select
-              v-model="selectedSessionId"
-              placeholder="请选择会话"
-              size="small"
-              filterable
-              style="flex: 1"
-            >
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+              <el-select
+                v-model="selectedSessionId"
+                placeholder="请选择会话（必填）"
+                size="small"
+                filterable
+                clearable
+                style="width: 100%;"
+              >
               <el-option
-                v-for="session in sessionStore.sessions"
+                v-for="session in availableSessions"
                 :key="session.id"
                 :label="session.name"
-                :value="session.id"
+                :value="session.talker"
               >
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <Avatar :src="session.avatar" :name="session.name" :size="24" />
                   <span>{{ session.name }}</span>
                 </div>
               </el-option>
-            </el-select>
+              </el-select>
+              <span v-if="searchType === 'message'" style="font-size: 12px; color: var(--el-color-warning);">
+                * 聊天记录搜索必须选择会话
+              </span>
+            </div>
           </div>
 
           <!-- 日期范围 -->
-          <div v-if="searchType !== 'session'" class="option-row">
+          <div v-if="searchType === 'message'" class="option-row">
             <label>日期范围:</label>
-            <el-date-picker
-              v-model="dateRange"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              size="small"
-              style="flex: 1"
-            />
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+              <el-date-picker
+                v-model="dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                size="small"
+                clearable
+                style="width: 100%;"
+              />
+              <span style="font-size: 12px; color: var(--el-text-color-secondary);">
+                * 时间范围默认为最近一年
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -232,18 +253,18 @@ watch(selectedSessionId, () => {
       <!-- 搜索结果 -->
       <div class="search-content">
         <!-- 加载状态 -->
-        <Loading v-if="loading" text="搜索中..." />
+        <Loading v-if="isLoading && !hasResults" text="搜索中..." />
 
         <!-- 空状态 -->
         <Empty
-          v-else-if="!searchText"
+          v-else-if="!searchText && !dateRange"
           icon="Search"
-          description="输入关键词开始搜索"
+          description="输入关键词或选择日期范围开始搜索"
         />
 
         <!-- 无结果 -->
         <Empty
-          v-else-if="!loading && !hasResults"
+          v-else-if="!isLoading && !hasResults"
           icon="DocumentDelete"
           description="未找到相关结果"
         >
@@ -259,50 +280,88 @@ watch(selectedSessionId, () => {
             <el-tag type="info" size="large">
               共找到 {{ stats.total }} 条结果
             </el-tag>
-            <el-tag v-if="stats.messages > 0" type="success" size="small">
-              {{ stats.messages }} 条消息
+            <el-tag v-if="stats.chatrooms > 0" type="warning" size="small">
+              {{ stats.chatrooms }} 个群聊
             </el-tag>
-            <el-tag v-if="stats.sessions > 0" type="warning" size="small">
-              {{ stats.sessions }} 个会话
+            <el-tag v-if="stats.contacts > 0" type="success" size="small">
+              {{ stats.contacts }} 个联系人
+            </el-tag>
+            <el-tag v-if="stats.messages > 0" type="primary" size="small">
+              {{ stats.messages }} 条消息
             </el-tag>
           </div>
 
-          <el-scrollbar>
-            <!-- 会话结果 -->
-            <div v-if="filteredSessionResults.length > 0" class="result-section">
+          <el-scrollbar class="results-scrollbar">
+            <!-- 群聊结果 -->
+            <div v-if="results.chatrooms.length > 0" class="result-section">
               <div class="section-header">
-                <h3>会话</h3>
-                <el-tag size="small">{{ filteredSessionResults.length }}</el-tag>
+                <h3>群聊</h3>
+                <el-tag size="small">{{ results.chatrooms.length }}</el-tag>
               </div>
 
-              <div class="session-results">
+              <div class="chatroom-results">
                 <div
-                  v-for="session in filteredSessionResults"
-                  :key="session.id"
-                  class="session-item"
-                  @click="viewSession(session)"
+                  v-for="chatroom in results.chatrooms"
+                  :key="chatroom.wxid"
+                  class="result-item chatroom-item"
+                  @click="viewChatroom(chatroom)"
                 >
                   <Avatar
-                    :src="session.avatar"
-                    :name="session.name"
+                    :src="chatroom.avatar"
+                    :name="chatroom.nickname || chatroom.remark || chatroom.wxid"
                     :size="48"
                   />
-                  <div class="session-info">
-                    <div class="session-name">{{ session.name }}</div>
-                    <div class="session-desc">
-                      <el-tag
-                        size="small"
-                        :type="session.type === 'group' ? 'warning' : 'info'"
-                        effect="plain"
-                      >
-                        {{ session.type === 'group' ? '群聊' : '私聊' }}
-                      </el-tag>
-                      <span v-if="session.lastMessage" class="last-message">
-                        {{ session.lastMessage.content }}
-                      </span>
+                  <div class="item-info">
+                    <div class="item-name">
+                      {{ chatroom.nickname || chatroom.remark || chatroom.wxid }}
+                    </div>
+                    <div class="item-desc">
+                      <el-tag size="small" type="warning" effect="plain">群聊</el-tag>
+                      <span v-if="chatroom.remark" class="remark">备注: {{ chatroom.remark }}</span>
                     </div>
                   </div>
-                  <div class="session-actions">
+                  <div class="item-actions">
+                    <el-icon><ArrowRight /></el-icon>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 联系人结果 -->
+            <div v-if="results.contacts.length > 0" class="result-section">
+              <div class="section-header">
+                <h3>联系人</h3>
+                <el-tag size="small">{{ results.contacts.length }}</el-tag>
+              </div>
+
+              <div class="contact-results">
+                <div
+                  v-for="contact in results.contacts"
+                  :key="contact.wxid"
+                  class="result-item contact-item"
+                  @click="viewContact(contact)"
+                >
+                  <Avatar
+                    :src="contact.avatar"
+                    :name="contact.nickname || contact.remark || contact.wxid"
+                    :size="48"
+                  />
+                  <div class="item-info">
+                    <div class="item-name">
+                      {{ contact.nickname || contact.remark || contact.wxid }}
+                    </div>
+                    <div class="item-desc">
+                      <el-tag 
+                        size="small" 
+                        :type="contact.type === 'friend' ? 'success' : 'info'" 
+                        effect="plain"
+                      >
+                        {{ contact.type === 'friend' ? '好友' : '其他' }}
+                      </el-tag>
+                      <span v-if="contact.remark" class="remark">备注: {{ contact.remark }}</span>
+                    </div>
+                  </div>
+                  <div class="item-actions">
                     <el-icon><ArrowRight /></el-icon>
                   </div>
                 </div>
@@ -310,17 +369,17 @@ watch(selectedSessionId, () => {
             </div>
 
             <!-- 消息结果 -->
-            <div v-if="filteredMessageResults.length > 0" class="result-section">
+            <div v-if="results.messages.length > 0" class="result-section">
               <div class="section-header">
-                <h3>消息</h3>
-                <el-tag size="small">{{ filteredMessageResults.length }}</el-tag>
+                <h3>聊天记录</h3>
+                <el-tag size="small">{{ results.messages.length }}</el-tag>
               </div>
 
               <div class="message-results">
                 <div
-                  v-for="message in filteredMessageResults"
+                  v-for="message in results.messages"
                   :key="message.id"
-                  class="message-item"
+                  class="result-item message-item"
                   @click="viewMessage(message)"
                 >
                   <div class="message-header">
@@ -330,9 +389,9 @@ watch(selectedSessionId, () => {
                       :size="32"
                     />
                     <div class="message-meta">
-                      <span class="sender-name">{{ message.talkerName }}</span>
+                      <span class="sender-name">{{ message.senderName || message.talkerName }}</span>
                       <span class="message-time">
-                        {{ new Date(message.createTime).toLocaleString() }}
+                        {{ new Date(message.createTime).toLocaleString('zh-CN') }}
                       </span>
                     </div>
                   </div>
@@ -345,6 +404,16 @@ watch(selectedSessionId, () => {
                       class="search-bubble"
                     />
                   </div>
+                </div>
+
+                <!-- 加载更多 -->
+                <div v-if="searchStore.hasMore && searchType === 'message'" class="load-more">
+                  <el-button
+                    :loading="searchStore.messageLoading"
+                    @click="loadMore"
+                  >
+                    加载更多
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -438,11 +507,20 @@ watch(selectedSessionId, () => {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
     flex-shrink: 0;
+  }
+
+  .results-scrollbar {
+    flex: 1;
   }
 
   .result-section {
     padding: 16px 24px;
+
+    & + .result-section {
+      border-top: 1px solid var(--el-border-color-lighter);
+    }
 
     .section-header {
       display: flex;
@@ -454,113 +532,114 @@ watch(selectedSessionId, () => {
         margin: 0;
         font-size: 16px;
         font-weight: 600;
+        color: var(--el-text-color-primary);
       }
     }
 
-    .session-results {
+    .result-item {
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--el-border-color-lighter);
+      background-color: var(--el-bg-color);
+
+      &:hover {
+        background-color: var(--el-fill-color-light);
+        border-color: var(--el-color-primary);
+        transform: translateX(2px);
+      }
+
+      & + .result-item {
+        margin-top: 8px;
+      }
+    }
+
+    .chatroom-item,
+    .contact-item {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
+      align-items: center;
+      gap: 12px;
 
-      .session-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: 1px solid var(--el-border-color-lighter);
+      .item-info {
+        flex: 1;
+        min-width: 0;
 
-        &:hover {
-          background-color: var(--el-fill-color-light);
-          border-color: var(--el-color-primary);
+        .item-name {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--el-text-color-primary);
+          margin-bottom: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
-        .session-info {
-          flex: 1;
-          min-width: 0;
+        .item-desc {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
 
-          .session-name {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--el-text-color-primary);
-            margin-bottom: 4px;
+          .remark {
+            color: var(--el-text-color-secondary);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
           }
+        }
+      }
 
-          .session-desc {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+      .item-actions {
+        color: var(--el-text-color-placeholder);
+        transition: color 0.2s;
+      }
+
+      &:hover .item-actions {
+        color: var(--el-color-primary);
+      }
+    }
+
+    .message-item {
+      .message-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+
+        .message-meta {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+
+          .sender-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--el-text-color-primary);
+          }
+
+          .message-time {
             font-size: 12px;
-
-            .last-message {
-              color: var(--el-text-color-secondary);
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-            }
+            color: var(--el-text-color-secondary);
           }
         }
+      }
 
-        .session-actions {
-          color: var(--el-text-color-placeholder);
+      .message-content {
+        .search-bubble {
+          :deep(.message-bubble) {
+            max-width: 100%;
+          }
         }
       }
     }
 
-    .message-results {
+    .load-more {
       display: flex;
-      flex-direction: column;
-      gap: 12px;
-
-      .message-item {
-        padding: 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: 1px solid var(--el-border-color-lighter);
-
-        &:hover {
-          background-color: var(--el-fill-color-light);
-          border-color: var(--el-color-primary);
-        }
-
-        .message-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 8px;
-
-          .message-meta {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-
-            .sender-name {
-              font-size: 14px;
-              font-weight: 500;
-              color: var(--el-text-color-primary);
-            }
-
-            .message-time {
-              font-size: 12px;
-              color: var(--el-text-color-secondary);
-            }
-          }
-        }
-
-        .message-content {
-          .search-bubble {
-            :deep(.message-bubble) {
-              max-width: 100%;
-            }
-          }
-        }
-      }
+      justify-content: center;
+      padding: 16px;
+      margin-top: 8px;
     }
   }
 }
@@ -583,8 +662,16 @@ watch(selectedSessionId, () => {
   }
 
   .search-results {
+    .result-stats {
+      padding: 12px 16px;
+    }
+
     .result-section {
       padding: 12px 16px;
+
+      .result-item {
+        padding: 10px;
+      }
     }
   }
 }

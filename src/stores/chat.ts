@@ -562,7 +562,7 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       const result = await chatlogAPI.searchMessages(searchParams)
-      searchResults.value = result.items || []
+      searchResults.value = result || []
 
       if (appStore.isDebug) {
         console.log('🔍 Search completed', {
