@@ -451,7 +451,7 @@ defineExpose({
         >
           <!-- 日期分隔符 -->
           <div class="message-date">
-            <span>{{ date }}</span>
+            <span>{{ date }} ({{ group.length }} 条)</span>
           </div>
 
           <!-- 消息列表 -->
