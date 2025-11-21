@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import type { Session } from '@/types'
 import { formatSessionTime } from '@/utils'
-import { useContactStore } from '@/stores/contact'
+import { useDisplayName } from './composables'
 import Avatar from '@/components/common/Avatar.vue'
 
 interface Props {
@@ -18,24 +18,11 @@ const emit = defineEmits<{
   click: [session: Session]
 }>()
 
-const contactStore = useContactStore()
-
-// 显示名称（从缓存获取）
-const displayName = ref(props.session.name)
-
-// 异步加载显示名称
-watch(() => props.session.id, async (newId) => {
-  if (newId) {
-    try {
-      const name = await contactStore.getContactDisplayName(newId)
-      if (name && name !== newId) {
-        displayName.value = name
-      }
-    } catch (err) {
-      console.warn('获取联系人显示名称失败:', newId, err)
-    }
-  }
-}, { immediate: true })
+// 使用 displayName composable
+const { displayName } = useDisplayName({
+  id: computed(() => props.session.id),
+  defaultName: computed(() => props.session.name)
+})
 
 // 格式化最后消息时间
 const lastMessageTime = computed(() => {

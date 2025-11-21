@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import type { Session, SessionDetail } from '@/types'
-import { useContactStore } from '@/stores/contact'
+import { useDisplayName } from './composables'
 import { useChatStore } from '@/stores/chat'
 
 interface Props {
@@ -24,32 +24,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
-const contactStore = useContactStore()
 const chatStore = useChatStore()
 
-// 显示名称（从缓存获取）
-const displayName = ref(props.session?.name || '')
-
-// 异步加载显示名称
-watch(() => props.session?.id, async (newId) => {
-  if (newId) {
-    try {
-      const name = await contactStore.getContactDisplayName(newId)
-      if (name && name !== newId) {
-        displayName.value = name
-      }
-    } catch (err) {
-      console.warn('获取联系人显示名称失败:', newId, err)
-    }
-  }
-}, { immediate: true })
-
-// 当 session 变化时更新默认名称
-watch(() => props.session?.name, (newName) => {
-  if (newName) {
-    displayName.value = newName
-  }
-}, { immediate: true })
+// 使用 displayName composable
+const { displayName } = useDisplayName({
+  id: computed(() => props.session?.id),
+  defaultName: computed(() => props.session?.name)
+})
 
 // 会话类型显示文本
 const sessionTypeText = computed(() => {

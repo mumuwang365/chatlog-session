@@ -8,6 +8,7 @@ import SessionList from '@/components/chat/SessionList.vue'
 import MessageList from '@/components/chat/MessageList.vue'
 import ChatHeader from '@/components/chat/ChatHeader.vue'
 import MobileNavBar from '@/components/layout/MobileNavBar.vue'
+import { useDisplayName } from '@/components/chat/composables'
 import type { Session } from '@/types'
 import { ElMessage } from 'element-plus'
 
@@ -36,32 +37,11 @@ const currentSession = computed(() => {
 // 当前会话的初始时间（用于消息加载）
 const currentSessionTime = ref<string | undefined>(undefined)
 
-// 移动端标题显示名称（从缓存获取）
-const mobileDisplayName = ref('')
-
-// 异步加载显示名称
-watch(() => currentSession.value?.id, async (newId) => {
-  if (newId && appStore.isMobile) {
-    try {
-      const name = await contactStore.getContactDisplayName(newId)
-      if (name && name !== newId) {
-        mobileDisplayName.value = name
-      } else {
-        mobileDisplayName.value = currentSession.value?.name || currentSession.value?.talkerName || ''
-      }
-    } catch (err) {
-      console.warn('获取联系人显示名称失败:', newId, err)
-      mobileDisplayName.value = currentSession.value?.name || currentSession.value?.talkerName || ''
-    }
-  }
-}, { immediate: true })
-
-// 当 currentSession 变化时更新默认名称
-watch(() => currentSession.value?.name, (newName) => {
-  if (newName && appStore.isMobile && !mobileDisplayName.value) {
-    mobileDisplayName.value = newName
-  }
-}, { immediate: true })
+// 使用 displayName composable 获取移动端显示名称
+const { displayName: mobileDisplayName } = useDisplayName({
+  id: computed(() => currentSession.value?.id),
+  defaultName: computed(() => currentSession.value?.name || currentSession.value?.talkerName || '')
+})
 
 // 移动端副标题（显示会话类型和消息数）
 const mobileSubtitle = computed(() => {
