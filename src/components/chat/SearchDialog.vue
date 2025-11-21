@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useSearchStore } from '@/stores/search'
 import { ElMessage } from 'element-plus'
 import SearchBar from '@/components/common/SearchBar.vue'
@@ -28,6 +28,23 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const searchStore = useSearchStore()
+
+// 检测是否为移动端（响应式）
+const windowWidth = ref(window.innerWidth)
+const isMobile = computed(() => windowWidth.value <= 768)
+
+// 监听窗口大小变化
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+})
 
 // 对话框显示状态
 const dialogVisible = computed({
@@ -154,9 +171,11 @@ watch(() => props.sessionId, (newId) => {
   <el-dialog
     v-model="dialogVisible"
     :title="`搜索聊天记录${sessionName ? ' - ' + sessionName : ''}`"
-    width="800px"
-    :fullscreen="false"
+    :fullscreen="isMobile"
+    :draggable="!isMobile"
+    :style="{ '--el-dialog-width': isMobile ? '100%' : '70%' }"
     class="search-dialog"
+    :class="{ 'mobile-dialog': isMobile }"
     destroy-on-close
   >
     <div class="search-dialog-content">
@@ -185,7 +204,7 @@ watch(() => props.sessionId, (newId) => {
             clearable
             style="flex: 1;"
           />
-          <span class="hint">默认搜索最近一年</span>
+          <span class="hint">最近一年</span>
         </div>
       </div>
 
@@ -248,6 +267,15 @@ watch(() => props.sessionId, (newId) => {
 
 <style lang="scss" scoped>
 .search-dialog {
+  :deep(.el-dialog) {
+    max-width: 1200px;
+    min-width: 600px;
+  }
+
+  :deep(.el-dialog__header) {
+    cursor: move;
+  }
+
   :deep(.el-dialog__body) {
     padding: 0;
     overflow: hidden;
@@ -316,32 +344,119 @@ watch(() => props.sessionId, (newId) => {
 // 响应式
 @media (max-width: 768px) {
   .search-dialog {
-    :deep(.el-dialog) {
-      width: 95% !important;
-      margin: 5vh auto !important;
+    &.mobile-dialog {
+      :deep(.el-dialog) {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: auto !important;
+        margin: 0 !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        display: flex;
+        flex-direction: column;
+      }
+
+      :deep(.el-dialog__header) {
+        padding: 16px;
+        margin: 0;
+        border-bottom: 1px solid var(--el-border-color-light);
+        cursor: default;
+      }
+
+      :deep(.el-dialog__title) {
+        font-size: 16px;
+        line-height: 1.4;
+      }
+
+      :deep(.el-dialog__body) {
+        flex: 1;
+        padding: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      :deep(.el-dialog__footer) {
+        padding: 12px 16px;
+        margin: 0;
+        flex-shrink: 0;
+      }
+    }
+
+    .search-dialog-content {
+      min-height: auto;
+      max-height: none;
+      height: 100%;
+      flex: 1;
+      overflow: hidden;
     }
   }
 
   .search-header {
-    padding: 16px;
+    padding: 12px 16px;
+    flex-shrink: 0;
+
+    .main-search {
+      margin-bottom: 12px;
+    }
 
     .date-range {
       flex-direction: column;
       align-items: stretch;
+      gap: 8px;
 
       label {
-        margin-bottom: 4px;
+        margin-bottom: 0;
+        font-size: 13px;
+      }
+
+      .hint {
+        font-size: 11px;
+        margin-top: 4px;
+      }
+
+      :deep(.el-date-editor) {
+        width: 100% !important;
       }
     }
   }
 
   .search-content {
-    padding: 16px;
+    padding: 12px 16px;
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
   }
 
   .search-results {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .result-stats {
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+
     :deep(.el-scrollbar) {
-      height: 350px !important;
+      flex: 1 !important;
+      height: auto !important;
+
+      .el-scrollbar__wrap {
+        max-height: 100%;
+      }
+    }
+  }
+
+  .dialog-footer {
+    flex-direction: row;
+
+    .el-button {
+      flex: 1;
     }
   }
 }
