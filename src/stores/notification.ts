@@ -54,6 +54,8 @@ interface NotificationConfig {
   onlyShowLatest: boolean       // 只显示最新一条
   maxNotifications: number      // 最大通知数
   autoClose: number             // 自动关闭时间（秒，0 表示不自动关闭）
+  myWxid?: string               // 我的微信 ID，用于识别 @我
+  showMessageContent: boolean   // 是否在通知中显示消息具体内容（隐私设置）
 }
 
 /**
@@ -75,6 +77,8 @@ const DEFAULT_CONFIG: NotificationConfig = {
   onlyShowLatest: true,
   maxNotifications: 5,
   autoClose: 5,                 // 5秒后自动关闭
+  myWxid: undefined,            // 需要用户手动配置
+  showMessageContent: true,     // 默认显示消息内容
 }
 
 /**
@@ -341,14 +345,18 @@ export const useNotificationStore = defineStore('notification', {
           return true
         }
 
+        // 优先使用配置中的 myWxid
+        const wxid = myWxid || this.config.myWxid
+        if (!wxid) return false
+
         // 检测 @我的微信号
-        if (message.content.includes(`@${myWxid}`)) {
+        if (message.content.includes(`@${wxid}`)) {
           return true
         }
 
         // 检测 @我的昵称（需要从联系人信息中获取）
         const contactStore = useContactStore()
-        const myContact = contactStore.contacts.find(c => c.wxid === myWxid)
+        const myContact = contactStore.contacts.find(c => c.wxid === wxid)
         const displayName = myContact?.remark || myContact?.nickname
         if (myContact && displayName && message.content.includes(`@${displayName}`)) {
           return true
@@ -471,18 +479,58 @@ export const useNotificationStore = defineStore('notification', {
       talkerName: string,
       message: Message
     ): { title: string; body: string; icon: string } {
-      let title = talkerName
-      const body = this.getMessagePreview(message)
       const icon = '/logo.png'  // 使用应用图标
+      
+      // 获取发送者显示名称
+      const contactStore = useContactStore()
+      const sender = contactStore.contacts.find(c => c.wxid === message.talker)
+      const senderName = sender?.remark || sender?.nickname || message.talker
+      
+      let title = ''
+      let body = ''
 
-      // 根据类型添加前缀
-      switch (type) {
-        case NotificationType.MENTION:
-          title = `[提到了你] ${talkerName}`
-          break
-        case NotificationType.QUOTE:
-          title = `[引用了你] ${talkerName}`
-          break
+      // 根据隐私设置决定是否显示具体内容
+      if (this.config.showMessageContent) {
+        // 显示具体内容
+        const preview = this.getMessagePreview(message)
+        
+        // 根据类型构建标题和内容
+        switch (type) {
+          case NotificationType.MENTION:
+            title = `${talkerName} - ${senderName} 提到了你`
+            body = preview
+            break
+          case NotificationType.QUOTE:
+            title = `${talkerName} - ${senderName} 引用了你`
+            body = preview
+            break
+          case NotificationType.MESSAGE:
+            title = `${talkerName} - ${senderName}`
+            body = preview
+            break
+          default:
+            title = talkerName
+            body = preview
+        }
+      } else {
+        // 隐私模式：不显示具体内容
+        switch (type) {
+          case NotificationType.MENTION:
+            title = `${talkerName}`
+            body = `${senderName} 提到了你`
+            break
+          case NotificationType.QUOTE:
+            title = `${talkerName}`
+            body = `${senderName} 引用了你`
+            break
+          case NotificationType.MESSAGE:
+            title = `${talkerName}`
+            body = `${senderName} 发来了新消息`
+            break
+          default:
+            title = talkerName
+            body = '您有新消息'
+        }
       }
 
       return { title, body, icon }
@@ -493,8 +541,11 @@ export const useNotificationStore = defineStore('notification', {
      */
     getMessagePreview(message: Message): string {
       switch (message.type) {
-        case 1:  // 文本
-          return message.content || '新消息'
+        case 1: {  // 文本
+          // 限制长度，避免通知过长
+          const content = message.content || '新消息'
+          return content.length > 50 ? content.substring(0, 50) + '...' : content
+        }
         case 3:  // 图片
           return '[图片]'
         case 34: // 语音

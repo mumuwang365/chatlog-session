@@ -31,9 +31,10 @@ const settings = ref({
   enableMessage: false,
   enableSound: true,
   enableVibrate: false,
-  notificationPreview: true,
   onlyShowLatest: true,
   autoCloseTime: 5,
+  myWxid: '',
+  showMessageContent: true,
 
   // 聊天设置
   enterToSend: true,
@@ -220,9 +221,10 @@ const loadSettings = () => {
       if (parsed.enableMessage !== undefined) settings.value.enableMessage = parsed.enableMessage
       if (parsed.enableSound !== undefined) settings.value.enableSound = parsed.enableSound
       if (parsed.enableVibrate !== undefined) settings.value.enableVibrate = parsed.enableVibrate
-      if (parsed.notificationPreview !== undefined) settings.value.notificationPreview = parsed.notificationPreview
       if (parsed.onlyShowLatest !== undefined) settings.value.onlyShowLatest = parsed.onlyShowLatest
       if (parsed.autoCloseTime !== undefined) settings.value.autoCloseTime = parsed.autoCloseTime
+      if (parsed.myWxid !== undefined) settings.value.myWxid = parsed.myWxid
+      if (parsed.showMessageContent !== undefined) settings.value.showMessageContent = parsed.showMessageContent
 
       if (parsed.enterToSend !== undefined) settings.value.enterToSend = parsed.enterToSend
       if (parsed.showTimestamp !== undefined) settings.value.showTimestamp = parsed.showTimestamp
@@ -253,6 +255,9 @@ onMounted(async () => {
   loadSettings()
   // 初始化通知 Store
   await notificationStore.init()
+  // 从 notificationStore 加载设置
+  settings.value.myWxid = notificationStore.config.myWxid || ''
+  settings.value.showMessageContent = notificationStore.config.showMessageContent
   // 同步通知设置
   syncNotificationSettings()
 })
@@ -274,6 +279,8 @@ const syncNotificationSettings = () => {
     enableVibrate: settings.value.enableVibrate,
     onlyShowLatest: settings.value.onlyShowLatest,
     autoClose: settings.value.autoCloseTime,
+    myWxid: settings.value.myWxid,
+    showMessageContent: settings.value.showMessageContent,
   })
 }
 
@@ -391,7 +398,6 @@ const resetSettings = async () => {
       fontSize: 'medium',
       enableNotifications: true,
       enableSound: true,
-      notificationPreview: true,
       enterToSend: true,
       showTimestamp: true,
       showAvatar: true,
@@ -405,6 +411,8 @@ const resetSettings = async () => {
       enableVibrate: false,
       onlyShowLatest: true,
       autoCloseTime: 5,
+      myWxid: '',
+      showMessageContent: true,
       saveHistory: true,
       autoDownloadMedia: true,
       compressImages: true,
@@ -736,6 +744,31 @@ const restartOnboarding = async () => {
 
               <el-divider />
 
+              <!-- 基础设置 -->
+              <div style="margin-bottom: 16px">
+                <el-text tag="b">基础设置</el-text>
+              </div>
+
+              <el-form-item label="我的微信 ID">
+                <el-input
+                  v-model="settings.myWxid"
+                  placeholder="请输入你的微信ID"
+                  :disabled="!settings.enableNotifications"
+                  style="width: 300px"
+                />
+                <span class="form-tip">用于识别哪些消息与你有关（如 @我）</span>
+              </el-form-item>
+
+              <el-form-item label="显示消息内容">
+                <el-switch
+                  v-model="settings.showMessageContent"
+                  :disabled="!settings.enableNotifications"
+                />
+                <span class="form-tip">关闭后通知只显示"有新消息"，不显示具体内容（隐私保护）</span>
+              </el-form-item>
+
+              <el-divider />
+
               <!-- 通知类型 -->
               <div style="margin-bottom: 16px">
                 <el-text tag="b">通知类型</el-text>
@@ -787,13 +820,7 @@ const restartOnboarding = async () => {
                 <span class="form-tip">仅移动设备支持</span>
               </el-form-item>
 
-              <el-form-item label="消息预览">
-                <el-switch
-                  v-model="settings.notificationPreview"
-                  :disabled="!settings.enableNotifications"
-                />
-                <span class="form-tip">在通知中显示消息内容</span>
-              </el-form-item>
+
 
               <el-form-item label="只显示最新">
                 <el-switch

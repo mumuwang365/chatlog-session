@@ -884,7 +884,7 @@ export const useAutoRefreshStore = defineStore('autoRefresh', {
       const talkerName = contact?.remark || contact?.nickname || talker
 
       // 获取当前用户的 wxid（用于检测 @我）
-      const myWxid = undefined
+      const myWxid = notificationStore.config.myWxid
 
       // 检测并发送通知
       try {
