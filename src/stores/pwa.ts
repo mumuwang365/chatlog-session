@@ -1,6 +1,6 @@
 /**
  * PWA Store
- * 
+ *
  * 管理 PWA 相关状态和功能：
  * - Service Worker 状态
  * - 安装提示
@@ -27,7 +27,7 @@ export const usePWAStore = defineStore('pwa', () => {
   // ============================================================================
   // State
   // ============================================================================
-  
+
   const swManager = ref<ServiceWorkerManager | null>(null)
   const swState = ref<ServiceWorkerState>(ServiceWorkerState.NOT_SUPPORTED)
   const isOnline = ref(navigator.onLine)
@@ -41,13 +41,13 @@ export const usePWAStore = defineStore('pwa', () => {
   // ============================================================================
   // Getters
   // ============================================================================
-  
+
   const isSupported = computed(() => {
     return swState.value !== ServiceWorkerState.NOT_SUPPORTED
   })
 
   const isActive = computed(() => {
-    return swState.value === ServiceWorkerState.ACTIVATED || 
+    return swState.value === ServiceWorkerState.ACTIVATED ||
            swState.value === ServiceWorkerState.REGISTERED
   })
 
@@ -77,7 +77,7 @@ export const usePWAStore = defineStore('pwa', () => {
       // 创建 Service Worker 管理器
       swManager.value = getServiceWorkerManager({
         enabled: true,
-        scriptUrl: '/sw.js',
+        scriptUrl: './sw.js',
         scope: '/',
         updateCheckInterval: 60 * 60 * 1000, // 1小时
       })
@@ -190,7 +190,7 @@ export const usePWAStore = defineStore('pwa', () => {
     // 检查是否在独立模式下运行（已安装为 PWA）
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     const isIosStandalone = (window.navigator as any).standalone === true
-    
+
     isInstalled.value = isStandalone || isIosStandalone
 
     if (isInstalled.value) {
@@ -225,16 +225,16 @@ export const usePWAStore = defineStore('pwa', () => {
     try {
       await installPromptEvent.value.prompt()
       const { outcome } = await installPromptEvent.value.userChoice
-      
+
       console.log('[PWA Store] Install prompt outcome:', outcome)
-      
+
       if (outcome === 'accepted') {
         isInstalled.value = true
         isInstallable.value = false
         installPromptEvent.value = null
         return true
       }
-      
+
       return false
     } catch (error) {
       console.error('[PWA Store] Install prompt failed:', error)
@@ -381,7 +381,7 @@ export const usePWAStore = defineStore('pwa', () => {
    */
   function getInstallGuide(): { platform: string; steps: string[] } {
     const userAgent = navigator.userAgent.toLowerCase()
-    
+
     if (/iphone|ipad|ipod/.test(userAgent)) {
       return {
         platform: 'iOS',

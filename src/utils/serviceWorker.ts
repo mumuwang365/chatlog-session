@@ -1,6 +1,6 @@
 /**
  * Service Worker 注册和管理工具
- * 
+ *
  * 功能：
  * - Service Worker 注册
  * - 生命周期管理
@@ -52,7 +52,7 @@ export class ServiceWorkerManager {
   constructor(config: Partial<ServiceWorkerConfig> = {}) {
     this.config = {
       enabled: true,
-      scriptUrl: '/sw.js',
+      scriptUrl: './sw.js',
       scope: '/',
       updateCheckInterval: 60 * 60 * 1000, // 1小时
       ...config,
@@ -94,7 +94,7 @@ export class ServiceWorkerManager {
       this.emit('statechange', this.state)
 
       console.log('[SW Manager] Registering Service Worker:', this.config.scriptUrl)
-      
+
       this.registration = await navigator.serviceWorker.register(
         this.config.scriptUrl,
         { scope: this.config.scope }
@@ -135,7 +135,7 @@ export class ServiceWorkerManager {
     try {
       this.stopUpdateCheck()
       const success = await this.registration.unregister()
-      
+
       if (success) {
         console.log('[SW Manager] Service Worker unregistered')
         this.registration = null
@@ -143,7 +143,7 @@ export class ServiceWorkerManager {
         this.emit('statechange', this.state)
         this.emit('unregistered')
       }
-      
+
       return success
     } catch (error) {
       console.error('[SW Manager] Unregistration failed:', error)
@@ -168,13 +168,13 @@ export class ServiceWorkerManager {
       if (newWorker) {
         newWorker.addEventListener('statechange', () => {
           console.log('[SW Manager] New worker state:', newWorker.state)
-          
+
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             // 新版本已安装，等待激活
             console.log('[SW Manager] New version installed, waiting for activation')
             this.emit('updateready')
           }
-          
+
           if (newWorker.state === 'activated') {
             console.log('[SW Manager] New version activated')
             this.state = ServiceWorkerState.ACTIVATED
@@ -217,7 +217,7 @@ export class ServiceWorkerManager {
    */
   private startUpdateCheck(): void {
     this.stopUpdateCheck()
-    
+
     this.updateCheckTimer = window.setInterval(() => {
       this.checkForUpdates()
     }, this.config.updateCheckInterval)
@@ -242,7 +242,7 @@ export class ServiceWorkerManager {
     }
 
     console.log('[SW Manager] Skipping waiting...')
-    
+
     // 发送消息给 Service Worker
     this.registration.waiting.postMessage({ type: 'SKIP_WAITING' })
   }
@@ -257,7 +257,7 @@ export class ServiceWorkerManager {
 
     return new Promise((resolve, reject) => {
       const messageChannel = new MessageChannel()
-      
+
       messageChannel.port1.onmessage = (event) => {
         if (event.data.success) {
           resolve(event.data)
