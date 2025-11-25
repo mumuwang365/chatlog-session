@@ -10,78 +10,58 @@
   "scope": "/",
   "lang": "zh-CN",
   "dir": "ltr",
-  "categories": ["productivity", "social", "utilities"],
+  "categories": [
+    "productivity",
+    "social",
+    "utilities"
+  ],
   "icons": [
     {
-      "src": "/icons/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/manifest-icon-192.maskable.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icons/icon-384x384.png",
-      "sizes": "384x384",
+      "src": "/icons/manifest-icon-192.maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/manifest-icon-512.maskable.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/manifest-icon-512.maskable.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/screenshots/mobile-1.png",
+      "src": "/screenshots/pic-2.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "联系人界面"
+    },
+    {
+      "src": "/screenshots/pic-3.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "搜索界面"
+    },
+    {
+      "src": "/screenshots/pic-1.png",
       "sizes": "750x1334",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "会话列表"
-    },
-    {
-      "src": "/screenshots/mobile-2.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "聊天界面"
-    },
-    {
-      "src": "/screenshots/desktop-1.png",
-      "sizes": "1920x1080",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "桌面版界面"
     }
   ],
   "shortcuts": [
@@ -92,8 +72,8 @@
       "url": "/",
       "icons": [
         {
-          "src": "/icons/shortcut-sessions.png",
-          "sizes": "96x96",
+          "src": "/icons/manifest-icon-192.maskable.png",
+          "sizes": "192x192",
           "type": "image/png"
         }
       ]
@@ -105,8 +85,8 @@
       "url": "/contacts",
       "icons": [
         {
-          "src": "/icons/shortcut-contacts.png",
-          "sizes": "96x96",
+          "src": "/icons/manifest-icon-192.maskable.png",
+          "sizes": "192x192",
           "type": "image/png"
         }
       ]
@@ -118,8 +98,8 @@
       "url": "/settings",
       "icons": [
         {
-          "src": "/icons/shortcut-settings.png",
-          "sizes": "96x96",
+          "src": "/icons/manifest-icon-192.maskable.png",
+          "sizes": "192x192",
           "type": "image/png"
         }
       ]

@@ -10,7 +10,6 @@ import App from './App.vue'
 import router from './router'
 import './assets/styles/index.scss'
 import { db } from './utils/db'
-import { initServiceWorker } from './utils/serviceWorker'
 
 // 开发环境：导入缓存调试工具
 if (import.meta.env.DEV) {
@@ -45,35 +44,6 @@ db.init().catch(err => {
 
 // 挂载应用
 app.mount('#app')
-
-// 初始化 Service Worker（生产环境）
-if (import.meta.env.PROD) {
-  initServiceWorker({
-    enabled: true,
-    scriptUrl: '/sw.js',
-    scope: '/',
-  }).then((manager) => {
-    console.log('✅ Service Worker initialized')
-    
-    // 监听更新
-    manager.on('updateready', () => {
-      console.log('🔄 New version available')
-      // 可以在这里提示用户刷新页面
-      if (confirm('发现新版本！是否立即更新？')) {
-        manager.skipWaiting().then(() => {
-          window.location.reload()
-        })
-      }
-    })
-    
-    // 监听错误
-    manager.on('error', (error) => {
-      console.error('❌ Service Worker error:', error)
-    })
-  }).catch((error) => {
-    console.error('❌ Failed to initialize Service Worker:', error)
-  })
-}
 
 // 注意：已移除自动后台刷新联系人功能
 // 用户可以在 Contact 视图中手动触发刷新

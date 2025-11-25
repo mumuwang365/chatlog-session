@@ -1,17 +1,24 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { usePWAStore } from '@/stores/pwa'
+import InstallPrompt from '@/components/PWA/InstallPrompt.vue'
+import UpdateNotification from '@/components/PWA/UpdateNotification.vue'
 
 const appStore = useAppStore()
+const pwaStore = usePWAStore()
 
 onMounted(() => {
   appStore.init()
+  pwaStore.init()
 })
 </script>
 
 <template>
   <div id="app" :class="{ 'dark-mode': appStore.isDark }">
     <router-view />
+    <InstallPrompt />
+    <UpdateNotification />
   </div>
 </template>
 
