@@ -56,7 +56,7 @@ function transformSession(apiData: SessionApiResponse): Session {
     avatar: '', // 后端未返回头像，暂时为空
     remark: '',
     type: session_type,
-    lastMessage: apiData.content ? {
+    lastMessage: (apiData.content || apiData.nickName) ? {
       nickName: apiData.nickName,
       content: apiData.content,
       createTime: new Date(apiData.nTime).getTime(),

@@ -38,27 +38,11 @@ const lastMessageTime = computed(() => {
 // 最后一条消息预览
 const lastMessagePreview = computed(() => {
   const msg = props.session.lastMessage
-  if (!msg) return '[非文本消息]'
+  if (!msg) return '[不支持的消息类型]'
 
-  // 根据消息类型显示不同的预览
-  switch (msg.type) {
-    case 1: // 文本
-      return !msg.nickName ? msg.content : msg.nickName +': ' + msg.content || ''
-    case 3: // 图片
-      return '[图片]'
-    case 34: // 语音
-      return '[语音]'
-    case 43: // 视频
-      return '[视频]'
-    case 47: // 表情
-      return '[表情]'
-    case 49: // 文件/链接等
-      return '[文件]'
-    case 10000: // 系统消息
-      return msg.content || '[系统消息]'
-    default:
-      return '[未知消息]'
-  }
+  let content = msg.content || '[非文本消息]'
+
+  return msg.nickName ? `${msg.nickName}: ${content}` : content
 })
 
 // 会话类型图标
