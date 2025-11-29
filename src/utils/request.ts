@@ -35,7 +35,7 @@ const getSettings = () => {
  * 获取 API Base URL
  * 优先从独立的 apiBaseUrl key 读取，其次从 settings 读取
  */
-const getApiBaseUrl = (): string => {
+export const getApiBaseUrl = (): string => {
   // 优先使用独立的 apiBaseUrl
   const directUrl = localStorage.getItem('apiBaseUrl')
   if (directUrl) {

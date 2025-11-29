@@ -1,25 +1,6 @@
 import { computed } from 'vue'
 import type { Message } from '@/types'
-
-// 获取 API Base URL
-const getApiBaseUrl = (): string => {
-  const directUrl = localStorage.getItem('apiBaseUrl')
-  if (directUrl) {
-    return directUrl
-  }
-  const settings = localStorage.getItem('chatlog-settings')
-  if (settings) {
-    try {
-      const parsed = JSON.parse(settings)
-      if (parsed.apiBaseUrl) {
-        return parsed.apiBaseUrl
-      }
-    } catch (err) {
-      console.error('解析设置失败:', err)
-    }
-  }
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5030'
-}
+import { mediaAPI } from '@/api/media'
 
 export function useMessageUrl(message: Message) {
   // 图片 URL
@@ -28,8 +9,7 @@ export function useMessageUrl(message: Message) {
       return message.content
     }
     if (message.contents?.md5) {
-      const apiBaseUrl = getApiBaseUrl()
-      return `${apiBaseUrl}/image/${message.contents.md5}`
+      return mediaAPI.getImageUrl(message.contents.md5)
     }
     return ''
   })
@@ -40,8 +20,7 @@ export function useMessageUrl(message: Message) {
       return message.content
     }
     if (message.contents?.md5) {
-      const apiBaseUrl = getApiBaseUrl()
-      return `${apiBaseUrl}/video/${message.contents.md5}`
+      return mediaAPI.getVideoUrl(message.contents.md5)
     }
     return ''
   })
@@ -56,8 +35,7 @@ export function useMessageUrl(message: Message) {
       return message.content
     }
     if (message.contents?.md5) {
-      const apiBaseUrl = getApiBaseUrl()
-      return `${apiBaseUrl}/image/${message.contents.md5}`
+      return mediaAPI.getImageUrl(message.contents.md5)
     }
     return ''
   })
@@ -68,8 +46,7 @@ export function useMessageUrl(message: Message) {
       return message.content
     }
     if (message.contents?.voice) {
-      const apiBaseUrl = getApiBaseUrl()
-      return `${apiBaseUrl}/voice/${message.contents.voice}`
+      return mediaAPI.getVoiceUrl(message.contents.voice)
     }
     return ''
   })
@@ -80,8 +57,7 @@ export function useMessageUrl(message: Message) {
       return message.content
     }
     if (message.contents?.md5) {
-      const apiBaseUrl = getApiBaseUrl()
-      return `${apiBaseUrl}/file/${message.contents.md5}`
+      return mediaAPI.getFileUrl(message.contents.md5)
     }
     return ''
   })

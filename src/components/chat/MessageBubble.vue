@@ -4,6 +4,7 @@ import type { Message } from '@/types'
 import { formatMessageTime } from '@/utils'
 import Avatar from '@/components/common/Avatar.vue'
 import { useAppStore } from '@/stores/app'
+import { mediaAPI } from '@/api/media'
 import { useMessageContent } from './composables/useMessageContent'
 import { useMessageUrl } from './composables/useMessageUrl'
 
@@ -117,6 +118,35 @@ const messageTime = computed(() => {
     return formatMessageTime(props.message.createTime)
   }
   return formatMessageTime(new Date(props.message.time).getTime() / 1000)
+})
+
+// 获取头像 URL
+const avatarUrl = computed(() => {
+  // 优先使用消息中自带的头像
+  if (props.message.talkerAvatar) {
+    return props.message.talkerAvatar
+  }
+
+  // 确定要获取头像的用户 ID
+  let username = ''
+  if (isSelf.value) {
+    // 如果是自己，尝试使用 sender
+    username = props.message.sender
+  } else {
+    // 如果是对方
+    if (props.message.isChatRoom) {
+      // 群聊显示发送者头像
+      username = props.message.sender
+    } else {
+      // 私聊显示聊天对象头像
+      username = props.message.talker
+    }
+  }
+
+  if (!username) return ''
+
+  // 构造 API URL
+  return mediaAPI.getAvatarUrl(`avatar/${username}`)
 })
 
 // 消息气泡类名
@@ -266,7 +296,7 @@ const forwardedMessages = computed(() => {
       <div v-if="!isSelf" class="message-bubble__avatar">
         <Avatar
           v-if="showAvatar"
-          :src="message.talkerAvatar"
+          :src="avatarUrl"
           :name="message.senderName"
           :size="36"
         />
@@ -519,7 +549,7 @@ const forwardedMessages = computed(() => {
 
       <!-- 头像 (自己的消息显示在右边) -->
       <div v-if="isSelf" class="message-bubble__avatar">
-        <Avatar v-if="showAvatar" :src="message.talkerAvatar" :name="'我'" :size="36" />
+        <Avatar v-if="showAvatar" :src="avatarUrl" :name="'我'" :size="36" />
         <div v-else class="avatar-placeholder"></div>
       </div>
     </template>

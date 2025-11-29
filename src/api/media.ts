@@ -3,7 +3,7 @@
  * 对应后端多媒体路由相关接口
  */
 
-import { request } from '@/utils/request'
+import { request, getApiBaseUrl } from '@/utils/request'
 
 /**
  * 多媒体 API 类
@@ -17,7 +17,7 @@ class MediaAPI {
    * @returns 图片 URL
    */
   getImageUrl(id: string): string {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5030'
+    const baseURL = getApiBaseUrl()
     return `${baseURL}/image/${encodeURIComponent(id)}`
   }
 
@@ -29,7 +29,7 @@ class MediaAPI {
    * @returns 缩略图 URL
    */
   getThumbnailUrl(id: string): string {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5030'
+    const baseURL = getApiBaseUrl()
     return `${baseURL}/image/${encodeURIComponent(id)}?thumbnail=true`
   }
 
@@ -41,7 +41,7 @@ class MediaAPI {
    * @returns 视频 URL
    */
   getVideoUrl(id: string): string {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5030'
+    const baseURL = getApiBaseUrl()
     return `${baseURL}/video/${encodeURIComponent(id)}`
   }
 
@@ -53,7 +53,7 @@ class MediaAPI {
    * @returns 语音 URL
    */
   getVoiceUrl(id: string): string {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5030'
+    const baseURL = getApiBaseUrl()
     return `${baseURL}/voice/${encodeURIComponent(id)}`
   }
 
@@ -65,7 +65,7 @@ class MediaAPI {
    * @returns 文件 URL
    */
   getFileUrl(id: string): string {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5030'
+    const baseURL = getApiBaseUrl()
     return `${baseURL}/file/${encodeURIComponent(id)}`
   }
 
@@ -77,7 +77,7 @@ class MediaAPI {
    * @returns 数据文件 URL
    */
   getDataUrl(path: string): string {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5030'
+    const baseURL = getApiBaseUrl()
     return `${baseURL}/data/${path}`
   }
 
@@ -98,7 +98,7 @@ class MediaAPI {
     }
 
     // 如果是相对路径，拼接为完整 URL
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5030'
+    const baseURL = getApiBaseUrl()
     return `${baseURL}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`
   }
 

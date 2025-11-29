@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 interface Props {
   src?: string
@@ -65,7 +65,17 @@ const backgroundColor = computed(() => {
 })
 
 // 图片加载失败处理
-const imgError = computed(() => !props.src)
+const hasLoadError = ref(false)
+
+watch(() => props.src, () => {
+  hasLoadError.value = false
+})
+
+const imgError = computed(() => !props.src || hasLoadError.value)
+
+const handleError = () => {
+  hasLoadError.value = true
+}
 </script>
 
 <template>
@@ -84,7 +94,7 @@ const imgError = computed(() => !props.src)
       :src="src"
       :alt="alt || name"
       class="avatar__img"
-      @error="() => {}"
+      @error="handleError"
     />
     
     <!-- 图标头像 -->
