@@ -3,13 +3,24 @@ import type { Message } from '@/types'
 import { mediaAPI } from '@/api/media'
 
 export function useMessageUrl(message: Message) {
+  //图片缩略图 URL
+  const imageThumbUrl = computed(() => {
+    if (message.content) {
+      return message.content
+    }
+
+    if (message.contents?.md5) {
+      return mediaAPI.getThumbnailUrl(message.contents.md5, message.contents.path)
+    }
+    return ''
+  })
   // 图片 URL
   const imageUrl = computed(() => {
     if (message.content) {
       return message.content
     }
     if (message.contents?.md5) {
-      return mediaAPI.getImageUrl(message.contents.md5)
+      return mediaAPI.getImageUrl(message.contents.md5, message.contents.path)
     }
     return ''
   })
@@ -35,7 +46,7 @@ export function useMessageUrl(message: Message) {
       return message.content
     }
     if (message.contents?.md5) {
-      return mediaAPI.getImageUrl(message.contents.md5)
+      return mediaAPI.getImageUrl(message.contents.md5, message.contents.path)
     }
     return ''
   })
@@ -103,6 +114,7 @@ export function useMessageUrl(message: Message) {
   const locationCityname = computed(() => message.contents?.cityname || '')
 
   return {
+    imageThumbUrl,
     imageUrl,
     videoUrl,
     voiceUrl,

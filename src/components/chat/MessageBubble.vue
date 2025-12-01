@@ -86,6 +86,7 @@ const {
 
 // 使用 URL 处理逻辑
 const {
+  imageThumbUrl,
   imageUrl,
   videoUrl,
   voiceUrl,
@@ -322,6 +323,7 @@ const forwardedMessages = computed(() => {
           <!-- 图片消息 -->
           <ImageMessage
             v-else-if="isImageMessage"
+            :thumb-url="imageThumbUrl"
             :image-url="imageUrl"
             :show-media-resources="showMediaResources"
             :md5="message.contents?.md5"

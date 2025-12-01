@@ -4,6 +4,7 @@ import { getMediaPlaceholder } from '../composables/utils'
 import ImageViewer from '@/components/common/ImageViewer.vue'
 
 interface Props {
+  thumbUrl?: string
   imageUrl: string
   showMediaResources: boolean
   md5?: string
@@ -42,7 +43,7 @@ const handleImageError = () => {
       <div v-if="imageUrl" class="image-wrapper">
         <img
           v-if="!imageError"
-          :src="imageUrl"
+          :src="thumbUrl"
           :class="['image-content', { 'image-loaded': imageLoaded }]"
           loading="lazy"
           @load="handleImageLoad"
@@ -63,7 +64,7 @@ const handleImageError = () => {
     </template>
     <span v-else class="media-placeholder">{{ getMediaPlaceholder(3) }}</span>
   </div>
-  
+
   <!-- 图片预览 -->
   <ImageViewer
     v-model:visible="showPreview"
