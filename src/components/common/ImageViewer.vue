@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Close, ZoomIn, ZoomOut, RefreshLeft, RefreshRight, Download } from '@element-plus/icons-vue'
+import { Close, ZoomIn, ZoomOut, RefreshLeft, RefreshRight, Download, WarningFilled } from '@element-plus/icons-vue'
 
 interface Props {
   visible: boolean
@@ -20,6 +20,13 @@ const emit = defineEmits<{
 const scale = ref(1)
 const rotate = ref(0)
 const loading = ref(true)
+
+// Live Photo / 视频兼容状态
+const resourceType = ref<'image' | 'video' | 'unknown'>('unknown')
+const isImage = ref(true) // 当前是否尝试作为图片显示
+const imageError = ref(false)
+const videoError = ref(false)
+const isVideoReady = ref(false)
 
 const showDialog = computed({
   get: () => props.visible,
@@ -66,11 +73,38 @@ const handleDownload = () => {
 }
 
 const handleImageLoad = () => {
+  if (resourceType.value === 'video') return
+  resourceType.value = 'image'
+  isImage.value = true
   loading.value = false
 }
 
 const handleImageError = () => {
-  loading.value = false
+  imageError.value = true
+  isImage.value = false // 切换尝试视频
+  
+  if (isVideoReady.value) {
+    resourceType.value = 'video'
+    loading.value = false
+  } else if (videoError.value) {
+    loading.value = false // 都失败了
+  }
+}
+
+const handleVideoLoad = () => {
+  isVideoReady.value = true
+  // 如果图片已经失败，则显示视频
+  if (imageError.value) {
+    resourceType.value = 'video'
+    loading.value = false
+  }
+}
+
+const handleVideoError = () => {
+  videoError.value = true
+  if (imageError.value) {
+    loading.value = false // 都失败了
+  }
 }
 
 const resetTransform = () => {
@@ -78,11 +112,20 @@ const resetTransform = () => {
   rotate.value = 0
 }
 
+const resetState = () => {
+  loading.value = true
+  imageError.value = false
+  videoError.value = false
+  isVideoReady.value = false
+  isImage.value = true
+  resourceType.value = 'unknown'
+  resetTransform()
+}
+
 // 重置变换当对话框关闭时
 watch(() => props.visible, (visible) => {
   if (visible) {
-    loading.value = true
-    resetTransform()
+    resetState()
   }
 })
 
@@ -140,14 +183,39 @@ watch(() => props.visible, (visible) => {
         <span>加载中...</span>
       </div>
 
-      <!-- 图片容器 -->
+      <!-- 媒体容器 -->
       <div class="image-container">
+        <!-- 加载失败提示 -->
+        <div v-if="imageError && videoError" class="error-state">
+          <el-icon class="error-icon"><WarningFilled /></el-icon>
+          <span>资源加载失败</span>
+        </div>
+
+        <!-- 图片 -->
         <img
+          v-show="isImage && !imageError"
           :src="imageUrl"
           :style="transformStyle"
-          class="viewer-image" loading="lazy" crossorigin="anonymous"
+          class="viewer-image" 
+          loading="lazy" 
+          crossorigin="anonymous"
           @load="handleImageLoad"
           @error="handleImageError"
+        />
+
+        <!-- 视频 (兼容 Live Photo) -->
+        <video
+          v-show="!isImage && isVideoReady"
+          :src="imageUrl"
+          :style="transformStyle"
+          class="viewer-image"
+          controls
+          autoplay
+          loop
+          playsinline
+          crossorigin="anonymous"
+          @loadedmetadata="handleVideoLoad"
+          @error="handleVideoError"
         />
       </div>
 
@@ -253,6 +321,19 @@ watch(() => props.visible, (visible) => {
       object-fit: contain;
       cursor: move;
       user-select: none;
+    }
+
+    .error-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: var(--el-text-color-secondary);
+
+      .error-icon {
+        font-size: 48px;
+        color: var(--el-color-warning);
+      }
     }
   }
 
