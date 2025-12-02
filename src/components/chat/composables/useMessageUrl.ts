@@ -2,6 +2,27 @@ import { computed } from 'vue'
 import type { Message } from '@/types'
 import { mediaAPI } from '@/api/media'
 
+const PROXY_BASE = 'https://spmc.sporneur.com/proxy'
+const ALLOWED_DOMAINS = [
+  'vweixinf.tc.qq.com',
+  'wxapp.tc.qq.com'
+]
+
+function convertToProxyUrl(url: string): string {
+  if (window.location.protocol !== 'https:') return url
+  if (!url || !url.startsWith('http://')) return url
+
+  try {
+    const urlObj = new URL(url)
+    if (ALLOWED_DOMAINS.includes(urlObj.hostname)) {
+      return `${PROXY_BASE}/${urlObj.hostname}${urlObj.pathname}${urlObj.search}`
+    }
+  } catch (e) {
+    console.error('Invalid URL:', url)
+  }
+  return url
+}
+
 export function useMessageUrl(message: Message) {
   //图片缩略图 URL
   const imageThumbUrl = computed(() => {
@@ -40,7 +61,7 @@ export function useMessageUrl(message: Message) {
   const emojiUrl = computed(() => {
     // 优先使用 cdnurl（type=47 的表情消息）
     if (message.contents?.cdnurl) {
-      return message.contents.cdnurl
+      return convertToProxyUrl(message.contents.cdnurl)
     }
     if (message.content) {
       return message.content
