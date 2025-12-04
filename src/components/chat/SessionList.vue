@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSessionStore } from '@/stores/session'
@@ -40,7 +40,7 @@ watch(() => props.searchText, (val) => {
 }, { immediate: true })
 
 // 直接使用 store 的计算属性和状态
-const sessionList = ref<Session[]>(sessionStore.filteredSessions)
+const sessionList = computed(() => sessionStore.filteredSessions)
 
 // 加载会话列表（首次加载，显示 loading）
 const loadSessions = async () => {
