@@ -15,6 +15,31 @@ export const useSessionStore = defineStore('session', () => {
   // ==================== State ====================
 
   /**
+   * 本地置顶会话 ID 集合
+   */
+  const localPinnedSessions = ref<Set<string>>(new Set())
+
+  // 初始化本地置顶数据
+  try {
+    const saved = localStorage.getItem('local-pinned-sessions')
+    if (saved) {
+      const list = JSON.parse(saved)
+      if (Array.isArray(list)) {
+        localPinnedSessions.value = new Set(list)
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load local pinned sessions', e)
+  }
+
+  /**
+   * 保存本地置顶数据
+   */
+  const saveLocalPinnedSessions = () => {
+    localStorage.setItem('local-pinned-sessions', JSON.stringify([...localPinnedSessions.value]))
+  }
+
+  /**
    * 会话列表
    */
   const sessions = ref<Session[]>([])
@@ -110,6 +135,18 @@ export const useSessionStore = defineStore('session', () => {
 
     // 排序
     result = [...result].sort((a, b) => {
+      // 1. 本地置顶优先
+      const aLocal = a.isLocalPinned ? 1 : 0
+      const bLocal = b.isLocalPinned ? 1 : 0
+      if (aLocal !== bLocal) return bLocal - aLocal
+
+      // 2. 服务端置顶（如果未禁用）
+      if (!appStore.settings.disableServerPinning) {
+        const aPinned = a.isPinned ? 1 : 0
+        const bPinned = b.isPinned ? 1 : 0
+        if (aPinned !== bPinned) return bPinned - aPinned
+      }
+
       let compareValue = 0
 
       switch (sortBy.value) {
@@ -134,14 +171,18 @@ export const useSessionStore = defineStore('session', () => {
    * 置顶会话列表
    */
   const pinnedSessions = computed(() => {
-    return filteredSessions.value.filter(s => s.isPinned)
+    return filteredSessions.value.filter(
+      s => s.isLocalPinned || (!appStore.settings.disableServerPinning && s.isPinned),
+    )
   })
 
   /**
    * 非置顶会话列表
    */
   const unpinnedSessions = computed(() => {
-    return filteredSessions.value.filter(s => !s.isPinned)
+    return filteredSessions.value.filter(
+      s => !(s.isLocalPinned || (!appStore.settings.disableServerPinning && s.isPinned)),
+    )
   })
 
   /**
@@ -229,6 +270,13 @@ export const useSessionStore = defineStore('session', () => {
 
       const { items, total } = await sessionAPI.getSessions(queryParams)
 
+      // 注入本地置顶状态
+      items.forEach(item => {
+        if (localPinnedSessions.value.has(item.talker)) {
+          item.isLocalPinned = true
+        }
+      })
+
       if (append) {
         sessions.value = [...sessions.value, ...items]
       } else {
@@ -284,6 +332,11 @@ export const useSessionStore = defineStore('session', () => {
   async function getSessionDetail(talker: string) {
     try {
       const session = await sessionAPI.getSessionDetail(talker)
+
+      // 注入本地置顶状态
+      if (localPinnedSessions.value.has(session.talker)) {
+        session.isLocalPinned = true
+      }
 
       // 更新或添加到列表
       const index = sessions.value.findIndex(s => s.talker === talker)
@@ -346,7 +399,9 @@ export const useSessionStore = defineStore('session', () => {
   function pinSession(talker: string) {
     const session = sessions.value.find(s => s.talker === talker)
     if (session) {
-      session.isPinned = true
+      localPinnedSessions.value.add(talker)
+      session.isLocalPinned = true
+      saveLocalPinnedSessions()
     }
   }
 
@@ -356,7 +411,9 @@ export const useSessionStore = defineStore('session', () => {
   function unpinSession(talker: string) {
     const session = sessions.value.find(s => s.talker === talker)
     if (session) {
-      session.isPinned = false
+      localPinnedSessions.value.delete(talker)
+      session.isLocalPinned = false
+      saveLocalPinnedSessions()
     }
   }
 
@@ -366,7 +423,14 @@ export const useSessionStore = defineStore('session', () => {
   function togglePinSession(talker: string) {
     const session = sessions.value.find(s => s.talker === talker)
     if (session) {
-      session.isPinned = !session.isPinned
+      if (localPinnedSessions.value.has(talker)) {
+        localPinnedSessions.value.delete(talker)
+        session.isLocalPinned = false
+      } else {
+        localPinnedSessions.value.add(talker)
+        session.isLocalPinned = true
+      }
+      saveLocalPinnedSessions()
     }
   }
 

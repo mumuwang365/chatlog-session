@@ -36,6 +36,7 @@ export interface UserSettings {
   showMessagePreview: boolean
   timeFormat: '12h' | '24h'
   showMediaResources: boolean
+  disableServerPinning: boolean
 }
 
 export interface LoadingState {

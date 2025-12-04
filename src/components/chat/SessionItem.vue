@@ -86,7 +86,7 @@ const handleCommand = (command: string) => {
       class="session-item"
       :class="{
         'session-item--active': active,
-        'session-item--pinned': session.isPinned,
+        'session-item--pinned': session.isPinned || session.isLocalPinned,
         'session-item--minimized': session.isMinimized
       }"
       @click="handleClick"
@@ -131,9 +131,9 @@ const handleCommand = (command: string) => {
     </div>
     <template #dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item :command="session.isPinned ? 'unpin' : 'pin'">
+        <el-dropdown-item :command="session.isLocalPinned ? 'unpin' : 'pin'">
           <el-icon><Paperclip /></el-icon>
-          {{ session.isPinned ? '取消置顶' : '置顶会话' }}
+          {{ session.isLocalPinned ? '取消置顶' : '置顶会话' }}
         </el-dropdown-item>
         <el-dropdown-item :command="session.unreadCount && session.unreadCount > 0 ? 'read' : 'unread'">
           <el-icon><ChatDotRound /></el-icon>

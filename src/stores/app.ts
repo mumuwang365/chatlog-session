@@ -51,6 +51,7 @@ export const useAppStore = defineStore('app', () => {
     showMessagePreview: true,
     timeFormat: '24h',
     showMediaResources: true,
+    disableServerPinning: false,
   })
 
   /**
@@ -403,6 +404,7 @@ export const useAppStore = defineStore('app', () => {
       showMessagePreview: true,
       timeFormat: '24h',
       showMediaResources: true,
+      disableServerPinning: false,
     }
     sidebarCollapsed.value = false
     activeNav.value = 'chat'

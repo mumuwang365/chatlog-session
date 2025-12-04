@@ -42,6 +42,7 @@ const settings = ref({
   showAvatar: true,
   messageGrouping: true,
   showMediaResources: true,
+  enableServerPinning: true,
   autoRefresh: false,
   autoRefreshInterval: 30,
 
@@ -231,6 +232,7 @@ const loadSettings = () => {
       if (parsed.showAvatar !== undefined) settings.value.showAvatar = parsed.showAvatar
       if (parsed.messageGrouping !== undefined) settings.value.messageGrouping = parsed.messageGrouping
       if (parsed.showMediaResources !== undefined) settings.value.showMediaResources = parsed.showMediaResources
+      if (parsed.enableServerPinning !== undefined) settings.value.enableServerPinning = parsed.enableServerPinning
       if (parsed.autoRefresh !== undefined) settings.value.autoRefresh = parsed.autoRefresh
       if (parsed.autoRefreshInterval !== undefined) settings.value.autoRefreshInterval = parsed.autoRefreshInterval
 
@@ -360,7 +362,8 @@ const saveSettings = () => {
 
   // 同步用户设置到 appStore
   appStore.updateSettings({
-    showMediaResources: settings.value.showMediaResources
+    showMediaResources: settings.value.showMediaResources,
+    disableServerPinning: !settings.value.enableServerPinning
   })
 
   // 同步通知设置到 notificationStore
@@ -403,6 +406,7 @@ const resetSettings = async () => {
       showAvatar: true,
       messageGrouping: true,
       showMediaResources: true,
+      enableServerPinning: true,
       autoRefresh: false,
       autoRefreshInterval: 30,
       enableMention: true,
@@ -899,6 +903,11 @@ const restartOnboarding = async () => {
               <el-form-item label="消息分组">
                 <el-switch v-model="settings.messageGrouping" />
                 <span class="form-tip">相同发送者的连续消息合并显示</span>
+              </el-form-item>
+
+              <el-form-item label="同步服务端置顶">
+                <el-switch v-model="settings.enableServerPinning" />
+                <span class="form-tip">关闭后仅显示本地置顶会话</span>
               </el-form-item>
 
               <el-divider />
