@@ -96,6 +96,7 @@ npm run build
 
 ### ✅ 已完成
 
+- **v0.15.0** - 本地会话置顶、Dashboard 重构、Live Photo 支持、PWA 增强
 - **v0.14.0** - 聊天记录/转发消息增强、消息列表体验优化、历史消息加载
 - **v0.13.0** - PWA 核心功能（Service Worker、Manifest、PWA Store）
 - **v0.12.0** - 通知优化、隐私设置、Settings 页面增强
@@ -104,8 +105,7 @@ npm run build
 
 ### 🔮 规划中
 
-- **v0.15.0 (2025 Q4)** - PWA 安装体验优化、会话列表操作菜单、虚拟滚动优化
-- **v0.16.0 (2026 Q1)** - 数据导出增强、消息统计、高级搜索
+- **v0.16.0 (2026 Q1)** - 数据导出增强、AI 大模型集成、消息列表优化
 - **v0.17.0 (2026 Q2)** - 滚动位置记忆、手势返回、下拉刷新、图片懒加载
 - **v1.0.0 (2026 Q2)** - 全面测试、文档完善、社区反馈整合
 
@@ -224,7 +224,7 @@ npm run build
 
 **Built with ❤️ by Chatlog Session Team**
 
-**当前版本**: [v0.14.0](docs/references/version-history.md) | **发布日期**: 2025-11-25
+**当前版本**: [v0.15.0](docs/references/version-history.md) | **发布日期**: 2025-12-05
 
 [⬆ 返回顶部](#chatlog-session)
 
