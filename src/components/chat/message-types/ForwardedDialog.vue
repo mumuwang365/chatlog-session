@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { mediaAPI } from '@/api/media'
 import Avatar from '@/components/common/Avatar.vue'
+import VoiceMessage from './VoiceMessage.vue'
 import { formatFileSize } from '../composables/utils'
 import { MessageTypeMap, MessageIconMap } from '@/types/message'
 
@@ -18,6 +21,7 @@ interface ForwardedDataItem {
   CDNDataURL?: string
   CDNThumbURL?: string
   FullMD5?: string
+  ThumbFullMD5?: string
   Link?: string
   Location?: {
     Label?: string
@@ -43,12 +47,16 @@ const dialogVisible = computed({
   set: (value) => emit('update:visible', value)
 })
 
+const videoPreviewVisible = ref(false)
+const currentVideoUrl = ref('')
+const currentVideoTitle = ref('视频预览')
+
 // 获取消息类型的中文描述
 const getMessageTypeLabel = (dataType: string): string => {
   const typeMap: Record<string, string> = {
     '1': '文本',
     '2': '图片',
-    '3': '语音',
+    '3': '图片',
     '4': '视频',
     '5': '视频',
     '6': '位置',
@@ -65,7 +73,7 @@ const getMessageIcon = (dataType: string): string => {
   const iconMap: Record<string, string> = {
     '1': 'ChatLineSquare',
     '2': 'Picture',
-    '3': 'Microphone',
+    '3': 'Picture',
     '4': 'VideoPlay',
     '5': 'VideoPlay',
     '6': 'Location',
@@ -80,19 +88,112 @@ const getMessageIcon = (dataType: string): string => {
 // 获取图片 URL（使用头像占位或实际图片）
 const getImageUrl = (item: ForwardedDataItem): string => {
   if (item.FullMD5) {
-    const apiBaseUrl = localStorage.getItem('apiBaseUrl') || 'http://127.0.0.1:5030'
-    return `${apiBaseUrl}/image/${item.FullMD5}`
+    return mediaAPI.getImageUrl(item.FullMD5)
   }
   return ''
 }
 
 // 获取缩略图 URL
 const getThumbnailUrl = (item: ForwardedDataItem): string => {
+  if (item.ThumbFullMD5) {
+    return mediaAPI.getThumbnailUrl(item.ThumbFullMD5)
+  }
   if (item.FullMD5) {
-    const apiBaseUrl = localStorage.getItem('apiBaseUrl') || 'http://127.0.0.1:5030'
-    return `${apiBaseUrl}/image/${item.FullMD5}?thumbnail=true`
+    return mediaAPI.getThumbnailUrl(item.FullMD5)
   }
   return ''
+}
+
+const getVideoUrl = (item: ForwardedDataItem): string => {
+  if (!item.FullMD5) return ''
+  return mediaAPI.getVideoUrl(item.FullMD5)
+}
+
+const getVoiceUrl = (item: ForwardedDataItem): string => {
+  if (item.FullMD5) {
+    return mediaAPI.getVoiceUrl(item.FullMD5)
+  }
+  return ''
+}
+
+const canPlayVoice = (item: ForwardedDataItem): boolean => {
+  return item.DataType === '34' && Boolean(item.FullMD5)
+}
+
+const canDownloadFile = (item: ForwardedDataItem): boolean => {
+  return item.DataType === '8' && Boolean(item.FullMD5)
+}
+
+const canPreviewVideo = (item: ForwardedDataItem): boolean => {
+  return ['4', '5', '43'].includes(item.DataType) && Boolean(item.FullMD5)
+}
+
+const canOpenLocation = (item: ForwardedDataItem): boolean => {
+  return Boolean(item.Location?.Lat && item.Location?.Lng)
+}
+
+const handleFileClick = async (item: ForwardedDataItem) => {
+  if (!canDownloadFile(item) || !item.FullMD5) {
+    ElMessage.warning('该转发文件暂不支持下载')
+    return
+  }
+
+  try {
+    await mediaAPI.downloadFile(item.FullMD5, item.DataTitle || undefined)
+  } catch (error) {
+    console.error('下载转发文件失败:', error)
+    ElMessage.error('下载转发文件失败')
+  }
+}
+
+const handleVideoClick = (item: ForwardedDataItem) => {
+  if (!canPreviewVideo(item)) {
+    ElMessage.warning('该转发视频暂不支持预览')
+    return
+  }
+
+  const videoUrl = getVideoUrl(item)
+  if (!videoUrl) {
+    ElMessage.warning('该转发视频暂不支持预览')
+    return
+  }
+
+  currentVideoUrl.value = videoUrl
+  currentVideoTitle.value = item.DataTitle || '视频预览'
+  videoPreviewVisible.value = true
+}
+
+const handleVideoPreviewClosed = () => {
+  currentVideoUrl.value = ''
+  currentVideoTitle.value = '视频预览'
+}
+
+const handleLinkClick = (item: ForwardedDataItem) => {
+  if (!item.Link) {
+    ElMessage.warning('该链接不可用')
+    return
+  }
+
+  window.open(item.Link, '_blank', 'noopener,noreferrer')
+}
+
+const handleLocationClick = (item: ForwardedDataItem) => {
+  if (!canOpenLocation(item)) {
+    ElMessage.warning('该位置缺少坐标信息')
+    return
+  }
+
+  const lat = item.Location?.Lat
+  const lng = item.Location?.Lng
+  const label = item.DataTitle || item.Location?.Label || item.Location?.PoiName || '位置'
+
+  if (!lat || !lng) {
+    ElMessage.warning('该位置缺少坐标信息')
+    return
+  }
+
+  const mapUrl = `https://apis.map.qq.com/uri/v1/marker?marker=coord:${lat},${lng};title:${encodeURIComponent(label)}&referer=chatlog-session`
+  window.open(mapUrl, '_blank', 'noopener,noreferrer')
 }
 </script>
 
@@ -133,9 +234,9 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
               v-else-if="item.DataType === '2' || item.DataType === '3'"
               class="forwarded-image"
             >
-              <el-image
-                v-if="getThumbnailUrl(item)"
-                :src="getThumbnailUrl(item)"
+                <el-image
+                  v-if="getThumbnailUrl(item)"
+                  :src="getThumbnailUrl(item)"
                 :preview-src-list="[getImageUrl(item)]"
                 :initial-index="0"
                 fit="cover"
@@ -160,18 +261,25 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
               </div>
             </div>
 
-            <!-- 语音消息 (DataType=3,34) -->
+            <!-- 语音消息 (DataType=34) -->
             <div
-              v-else-if="item.DataType === '3' || item.DataType === '34'"
+              v-else-if="item.DataType === '34'"
               class="forwarded-voice"
             >
-              <el-icon class="voice-icon"><Microphone /></el-icon>
-              <div class="voice-info">
-                <span>[语音]</span>
-                <span v-if="item.DataSize" class="media-size">
-                  {{ formatFileSize(parseInt(item.DataSize)) }}
-                </span>
-              </div>
+              <VoiceMessage
+                v-if="canPlayVoice(item)"
+                :voice-url="getVoiceUrl(item)"
+                :show-media-resources="true"
+              />
+              <template v-else>
+                <el-icon class="voice-icon"><Microphone /></el-icon>
+                <div class="voice-info">
+                  <span>[语音]</span>
+                  <span v-if="item.DataSize" class="media-size">
+                    {{ formatFileSize(parseInt(item.DataSize)) }}
+                  </span>
+                </div>
+              </template>
             </div>
 
             <!-- 视频消息 (DataType=4,5,43) -->
@@ -179,10 +287,14 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
               v-else-if="item.DataType === '4' || item.DataType === '5' || item.DataType === '43'"
               class="forwarded-video"
             >
-              <div v-if="getThumbnailUrl(item)" class="video-thumbnail">
+                <div
+                  v-if="getThumbnailUrl(item)"
+                  class="video-thumbnail"
+                  :class="{ 'is-clickable': canPreviewVideo(item) }"
+                  @click="canPreviewVideo(item) ? handleVideoClick(item) : undefined"
+                >
                 <el-image
                   :src="getThumbnailUrl(item)"
-                  :preview-src-list="[getImageUrl(item)]"
                   fit="cover"
                   lazy
                 >
@@ -202,7 +314,12 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
                   <el-icon size="40"><VideoPlay /></el-icon>
                 </div>
               </div>
-              <div v-else class="video-placeholder">
+              <div
+                v-else
+                class="video-placeholder"
+                :class="{ 'is-clickable': canPreviewVideo(item) }"
+                @click="canPreviewVideo(item) ? handleVideoClick(item) : undefined"
+              >
                 <el-icon class="video-icon"><VideoPlay /></el-icon>
                 <div class="video-info">
                   <div class="video-title">
@@ -216,7 +333,12 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
             </div>
 
             <!-- 文件消息 (DataType=8) -->
-            <div v-else-if="item.DataType === '8'" class="forwarded-file">
+            <div
+              v-else-if="item.DataType === '8'"
+              class="forwarded-file"
+              :class="{ 'is-clickable': canDownloadFile(item) }"
+              @click="canDownloadFile(item) ? handleFileClick(item) : undefined"
+            >
               <el-icon class="file-icon"><Document /></el-icon>
               <div class="file-details">
                 <div class="file-name">
@@ -232,7 +354,12 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
             </div>
 
             <!-- 位置消息 (DataType=6,48) -->
-            <div v-else-if="item.DataType === '6' || item.DataType === '48'" class="forwarded-location">
+            <div
+              v-else-if="item.DataType === '6' || item.DataType === '48'"
+              class="forwarded-location"
+              :class="{ 'is-clickable': canOpenLocation(item) }"
+              @click="canOpenLocation(item) ? handleLocationClick(item) : undefined"
+            >
               <el-icon class="location-icon"><Location /></el-icon>
               <div class="location-info">
                 <div class="location-label">
@@ -245,7 +372,7 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
             </div>
 
             <!-- 链接消息 (有 Link 字段) -->
-            <div v-else-if="item.Link" class="forwarded-link">
+            <div v-else-if="item.Link" class="forwarded-link is-clickable" @click="handleLinkClick(item)">
               <el-icon class="link-icon"><Link /></el-icon>
               <div class="link-info">
                 <div class="link-title">
@@ -280,12 +407,35 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
       <el-button @click="dialogVisible = false">关闭</el-button>
     </template>
   </el-dialog>
+
+  <el-dialog
+    v-model="videoPreviewVisible"
+    :title="currentVideoTitle"
+    width="90%"
+    :style="{ maxWidth: '1200px' }"
+    align-center
+    destroy-on-close
+    @closed="handleVideoPreviewClosed"
+  >
+    <video v-if="currentVideoUrl" :src="currentVideoUrl" controls class="preview-video">
+      您的浏览器不支持视频播放
+    </video>
+  </el-dialog>
 </template>
 
 <style lang="scss" scoped>
 .forwarded-dialog {
   max-height: 500px;
   overflow-y: auto;
+
+  .is-clickable {
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--el-fill-color-light);
+    }
+  }
 
   .forwarded-list {
     display: flex;
@@ -397,6 +547,12 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
     background-color: var(--el-fill-color);
     border-radius: 6px;
 
+    :deep(.voice-message) {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+
     .voice-icon {
       font-size: 24px;
       color: var(--el-color-success);
@@ -419,7 +575,7 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
       height: 200px;
       border-radius: 8px;
       overflow: hidden;
-      cursor: pointer;
+      cursor: default;
 
       .el-image {
         width: 100%;
@@ -644,6 +800,14 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
   .media-size {
     font-size: 12px;
     color: var(--el-text-color-placeholder);
+  }
+
+  .preview-video {
+    display: block;
+    width: 100%;
+    max-height: 70vh;
+    border-radius: 8px;
+    background-color: #000;
   }
 }
 
