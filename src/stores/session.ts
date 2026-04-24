@@ -23,19 +23,6 @@ export const useSessionStore = defineStore('session', () => {
    */
   const localPinnedSessions = ref<Set<string>>(new Set())
 
-  // 初始化本地置顶数据
-  try {
-    const saved = localStorage.getItem('local-pinned-sessions')
-    if (saved) {
-      const list = JSON.parse(saved)
-      if (Array.isArray(list)) {
-        localPinnedSessions.value = new Set(list)
-      }
-    }
-  } catch (e) {
-    console.error('Failed to load local pinned sessions', e)
-  }
-
   /**
    * 保存本地置顶数据
    */
@@ -596,6 +583,24 @@ export const useSessionStore = defineStore('session', () => {
     search.$reset()
   }
 
+  /**
+   * 初始化：从 localStorage 加载本地置顶数据
+   * 应在组件 onMounted 中调用，而非 store 创建时自动执行
+   */
+  function init() {
+    try {
+      const saved = localStorage.getItem('local-pinned-sessions')
+      if (saved) {
+        const list = JSON.parse(saved)
+        if (Array.isArray(list)) {
+          localPinnedSessions.value = new Set(list)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load local pinned sessions', e)
+    }
+  }
+
   // ==================== Return ====================
 
   return {
@@ -633,6 +638,7 @@ export const useSessionStore = defineStore('session', () => {
     getSessionSearchMetadata: search.getSessionSearchMetadata,
 
     // Actions
+    init,
     loadSessions,
     loadMoreSessions,
     refreshSessions,

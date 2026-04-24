@@ -172,6 +172,9 @@ onMounted(async () => {
   // 初始化 chatStore（缓存、自动刷新、事件监听）
   chatStore.init()
 
+  // 初始化 sessionStore（本地置顶数据）
+  sessionStore.init()
+
   // 初始化自动刷新管理器
   initAutoRefresh()
 
