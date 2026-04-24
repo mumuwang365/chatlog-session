@@ -4,7 +4,6 @@
  */
 
 export { useAppStore } from './app'
-export { useChatStore } from './chat'
 export { useChatMessagesStore } from './chatMessages'
 export { useChatSearchStore } from './chatSearch'
 export { useChatSelectionStore } from './chatSelection'
