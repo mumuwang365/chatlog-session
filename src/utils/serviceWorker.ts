@@ -355,77 +355,6 @@ export class ServiceWorkerManager {
   }
 
   /**
-   * 订阅推送通知
-   */
-  async subscribeToPush(vapidPublicKey: string): Promise<PushSubscription> {
-    if (!this.registration) {
-      throw new Error('Service Worker not registered')
-    }
-
-    const subscription = await this.registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey),
-    })
-
-    console.log('[SW Manager] Push subscription created')
-    return subscription
-  }
-
-  /**
-   * 取消推送订阅
-   */
-  async unsubscribeFromPush(): Promise<boolean> {
-    if (!this.registration) {
-      return false
-    }
-
-    const subscription = await this.registration.pushManager.getSubscription()
-    if (subscription) {
-      const success = await subscription.unsubscribe()
-      console.log('[SW Manager] Push subscription removed')
-      return success
-    }
-
-    return false
-  }
-
-  /**
-   * 注册后台同步
-   */
-  async registerBackgroundSync(tag: string): Promise<void> {
-    if (!this.registration) {
-      throw new Error('Service Worker not registered')
-    }
-
-    // @ts-ignore -- Background Sync API 可能不被所有 TypeScript 版本识别
-    if ('sync' in this.registration) {
-      // @ts-ignore -- sync API 类型定义缺失
-      await this.registration.sync.register(tag)
-      console.log('[SW Manager] Background sync registered:', tag)
-    } else {
-      console.warn('[SW Manager] Background Sync not supported')
-    }
-  }
-
-  /**
-   * 注册定期同步
-   */
-  async registerPeriodicSync(tag: string, minInterval: number): Promise<void> {
-    if (!this.registration) {
-      throw new Error('Service Worker not registered')
-    }
-
-    // @ts-ignore -- Periodic Sync API 可能不被所有 TypeScript 版本识别
-    if ('periodicSync' in this.registration) {
-      // @ts-ignore -- periodicSync API 类型定义缺失
-      await this.registration.periodicSync.register(tag, { minInterval })
-      console.log('[SW Manager] Periodic sync registered:', tag)
-    } else {
-      console.warn('[SW Manager] Periodic Sync not supported')
-    }
-  }
-
-  /**
    * 添加事件监听器
    */
   on(event: string, callback: (data: any) => void): void {
@@ -453,23 +382,6 @@ export class ServiceWorkerManager {
     if (callbacks) {
       callbacks.forEach(callback => callback(data))
     }
-  }
-
-  /**
-   * 工具方法：将 Base64 字符串转换为 Uint8Array
-   */
-  private urlBase64ToUint8Array(base64String: string): Uint8Array {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-
-    const rawData = window.atob(base64)
-    const outputArray = new Uint8Array(rawData.length)
-
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i)
-    }
-
-    return outputArray
   }
 
   /**

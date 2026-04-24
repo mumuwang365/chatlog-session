@@ -337,32 +337,6 @@ export const usePWAStore = defineStore('pwa', () => {
   }
 
   /**
-   * 注册后台同步
-   */
-  async function registerBackgroundSync(tag: string) {
-    if (!swManager.value) return
-
-    try {
-      await swManager.value.registerBackgroundSync(tag)
-    } catch (error) {
-      console.error('[PWA Store] Failed to register background sync:', error)
-    }
-  }
-
-  /**
-   * 注册定期同步
-   */
-  async function registerPeriodicSync(tag: string, minInterval: number) {
-    if (!swManager.value) return
-
-    try {
-      await swManager.value.registerPeriodicSync(tag, minInterval)
-    } catch (error) {
-      console.error('[PWA Store] Failed to register periodic sync:', error)
-    }
-  }
-
-  /**
    * 注销 Service Worker
    */
   async function unregister() {
@@ -495,8 +469,6 @@ export const usePWAStore = defineStore('pwa', () => {
     updateCache,
     showNotification,
     requestNotificationPermission,
-    registerBackgroundSync,
-    registerPeriodicSync,
     unregister,
     getInstallGuide,
     getStats,
