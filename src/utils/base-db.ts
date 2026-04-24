@@ -112,19 +112,6 @@ export abstract class BaseDatabase {
   }
 
   /**
-   * 检查对象存储是否存在
-   */
-  protected async checkStore(storeName: string): Promise<boolean> {
-    try {
-      const db = await this.getDB()
-      return db.objectStoreNames.contains(storeName)
-    } catch (error) {
-      console.error('检查对象存储失败:', error)
-      return false
-    }
-  }
-
-  /**
    * 通用保存方法（添加或更新）
    */
   protected async save<T = any>(storeName: string, data: T): Promise<number | string> {
@@ -415,36 +402,6 @@ export abstract class BaseDatabase {
   }
 
   /**
-   * 通用批量删除方法
-   *
-   * 使用单个事务删除所有数据，通过 transaction.oncomplete 确认完成。
-   */
-  protected async deleteMany(storeName: string, keys: (number | string)[]): Promise<void> {
-    if (keys.length === 0) return
-
-    const db = await this.getDB()
-
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([storeName], 'readwrite')
-      const store = transaction.objectStore(storeName)
-
-      transaction.oncomplete = () => resolve()
-      transaction.onerror = () => {
-        console.error(`❌ 批量删除失败 [${storeName}]:`, transaction.error)
-        reject(transaction.error)
-      }
-      transaction.onabort = () => {
-        console.error(`❌ 批量删除事务中止 [${storeName}]:`, transaction.error)
-        reject(transaction.error || new Error('Transaction aborted'))
-      }
-
-      for (const key of keys) {
-        store.delete(key)
-      }
-    })
-  }
-
-  /**
    * 通用清空方法
    */
   protected async clear(storeName: string): Promise<void> {
@@ -490,69 +447,6 @@ export abstract class BaseDatabase {
   }
 
   /**
-   * 检查数据库是否正常
-   */
-  async checkDatabase(): Promise<boolean> {
-    try {
-      const db = await this.getDB()
-      const config = this.config
-
-      // 检查所有必需的对象存储是否存在
-      for (const store of config.stores) {
-        if (!db.objectStoreNames.contains(store.name)) {
-          console.error(`❌ 缺少对象存储: ${store.name}`)
-          return false
-        }
-      }
-
-      console.log(`✅ 数据库 [${config.name}] 检查通过`)
-      return true
-    } catch (error) {
-      console.error(`❌ 数据库 [${this.config.name}] 检查失败:`, error)
-      return false
-    }
-  }
-
-  /**
-   * 重置数据库（删除并重新创建）
-   */
-  async resetDatabase(): Promise<void> {
-    const config = this.config
-
-    return new Promise((resolve, reject) => {
-      // 先关闭现有连接
-      this.close()
-
-      // 删除数据库
-      const deleteRequest = indexedDB.deleteDatabase(config.name)
-
-      deleteRequest.onsuccess = async () => {
-        console.log(`🗑️ 数据库 [${config.name}] 已删除`)
-
-        try {
-          // 重新初始化
-          await this.init()
-          console.log(`✅ 数据库 [${config.name}] 已重置`)
-          resolve()
-        } catch (error) {
-          console.error(`❌ 数据库 [${config.name}] 重置失败:`, error)
-          reject(error)
-        }
-      }
-
-      deleteRequest.onerror = () => {
-        console.error(`❌ 删除数据库 [${config.name}] 失败:`, deleteRequest.error)
-        reject(deleteRequest.error)
-      }
-
-      deleteRequest.onblocked = () => {
-        console.warn(`⚠️ 删除数据库 [${config.name}] 被阻止，请关闭所有使用该数据库的标签页`)
-        reject(new Error('Database deletion blocked'))
-      }
-    })
-  }
-
-  /**
    * 关闭数据库
    */
   close(): void {
@@ -562,32 +456,4 @@ export abstract class BaseDatabase {
       this.initPromise = null
       console.log(`🔒 数据库 [${this.config.name}] 已关闭`)
     }
-  }
-
-  /**
-   * 清空所有数据
-   */
-  async clearAll(): Promise<void> {
-    const db = await this.getDB()
-    const cfg = this.config
-
-    return new Promise((resolve, reject) => {
-      const storeNames = cfg.stores.map(s => s.name)
-      const transaction = db.transaction(storeNames, 'readwrite')
-
-      storeNames.forEach(storeName => {
-        transaction.objectStore(storeName).clear()
-      })
-
-      transaction.oncomplete = () => {
-        console.log(`🗑️ 已清空数据库 [${cfg.name}] 所有数据`)
-        resolve()
-      }
-
-      transaction.onerror = () => {
-        console.error(`❌ 清空数据库 [${cfg.name}] 失败:`, transaction.error)
-        reject(transaction.error)
-      }
-    })
-  }
-}
+  }}
