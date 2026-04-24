@@ -5,6 +5,10 @@
 
 export { useAppStore } from './app'
 export { useChatStore } from './chat'
+export { useChatMessagesStore } from './chatMessages'
+export { useChatSearchStore } from './chatSearch'
+export { useChatSelectionStore } from './chatSelection'
+export { useChatExportStore } from './chatExport'
 export { useSessionStore } from './session'
 export { useContactStore } from './contact'
 export { useOnboardingStore } from './onboarding'
@@ -14,11 +18,13 @@ export { useMessageCacheStore } from './messageCache'
 export { useAutoRefreshStore } from './autoRefresh'
 export { useNotificationStore } from './notification'
 export { usePWAStore } from './pwa'
-export { useBatchSelectionStore } from './batchSelection'
 export { useSessionSearch } from './sessionSearch'
 
 import { useAppStore } from './app'
-import { useChatStore } from './chat'
+import { useChatMessagesStore } from './chatMessages'
+import { useChatSearchStore } from './chatSearch'
+import { useChatSelectionStore } from './chatSelection'
+import { useChatExportStore } from './chatExport'
 import { useSessionStore } from './session'
 import { useContactStore } from './contact'
 import { useOnboardingStore } from './onboarding'
@@ -28,14 +34,16 @@ import { useMessageCacheStore } from './messageCache'
 import { useAutoRefreshStore } from './autoRefresh'
 import { useNotificationStore } from './notification'
 import { usePWAStore } from './pwa'
-import { useBatchSelectionStore } from './batchSelection'
 
 /**
  * 重置所有 store
  */
 export function resetAllStores() {
   const appStore = useAppStore()
-  const chatStore = useChatStore()
+  const chatMessagesStore = useChatMessagesStore()
+  const chatSearchStore = useChatSearchStore()
+  const chatSelectionStore = useChatSelectionStore()
+  const chatExportStore = useChatExportStore()
   const sessionStore = useSessionStore()
   const contactStore = useContactStore()
   const onboardingStore = useOnboardingStore()
@@ -45,10 +53,12 @@ export function resetAllStores() {
   const autoRefreshStore = useAutoRefreshStore()
   const notificationStore = useNotificationStore()
   const pwaStore = usePWAStore()
-  const batchSelectionStore = useBatchSelectionStore()
 
   appStore.$reset()
-  chatStore.$reset()
+  chatMessagesStore.$reset()
+  chatSearchStore.$reset()
+  chatSelectionStore.$reset()
+  chatExportStore.$reset()
   sessionStore.$reset()
   contactStore.$reset()
   onboardingStore.$reset()
@@ -58,5 +68,4 @@ export function resetAllStores() {
   autoRefreshStore.$reset()
   notificationStore.$reset()
   pwaStore.$reset()
-  batchSelectionStore.$reset()
 }

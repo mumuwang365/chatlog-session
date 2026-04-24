@@ -4,7 +4,7 @@ import type { Message } from '@/types'
 import { formatMessageTime } from '@/utils'
 import Avatar from '@/components/common/Avatar.vue'
 import { useAppStore } from '@/stores/app'
-import { useChatStore } from '@/stores/chat'
+import { useChatMessagesStore } from '@/stores/chatMessages'
 import { mediaAPI } from '@/api/media'
 import { useMessageUrl } from './composables/useMessageUrl'
 import { useMessageType } from './composables/useMessageType'
@@ -33,7 +33,7 @@ const emit = defineEmits<{
 
 // 获取 app store
 const appStore = useAppStore()
-const chatStore = useChatStore()
+const chatStore = useChatMessagesStore()
 
 // 是否显示媒体资源
 const showMediaResources = computed(() => appStore.settings.showMediaResources)

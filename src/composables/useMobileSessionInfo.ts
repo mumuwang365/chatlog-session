@@ -1,7 +1,7 @@
 import { ref, computed, watchEffect } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useChatroomStore } from '@/stores/chatroom'
-import { useChatStore } from '@/stores/chat'
+import { useChatMessagesStore } from '@/stores/chatMessages'
 import type { Session } from '@/types'
 
 /**
@@ -11,7 +11,7 @@ import type { Session } from '@/types'
 export function useMobileSessionInfo(currentSession: () => Session | null) {
   const appStore = useAppStore()
   const chatroomStore = useChatroomStore()
-  const chatStore = useChatStore()
+  const chatStore = useChatMessagesStore()
 
   // 移动端副标题（显示会话类型和消息数）
   const mobileSubtitle = ref('')

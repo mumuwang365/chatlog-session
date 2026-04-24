@@ -1,1173 +1,118 @@
 /**
- * 聊天消息状态管理
+ * 聊天消息状态管理 — 向后兼容入口
+ *
+ * @deprecated 此 store 已拆分为四个子 store，请直接使用：
+ * - useChatMessagesStore: 消息加载/分页/Gap/EmptyRange/currentTalker
+ * - useChatSearchStore: 搜索关键词/结果/执行
+ * - useChatSelectionStore: 消息选择/批量操作
+ * - useChatExportStore: 导出状态/进度/格式
+ *
+ * 本文件提供向后兼容的统一入口，新代码请直接使用子 store
  */
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { chatlogAPI, mediaAPI } from '@/api'
-import type { Message } from '@/types/message'
-import {
-  createEmptyRangeMessage,
-  createGapMessage,
-  parseTimeRangeStart,
-  parseTimeRangeEnd,
-} from '@/utils/message-factory'
-import type { SearchParams } from '@/types/api'
-import { useAppStore } from './app'
-import { useMessageCacheStore } from './messageCache'
-import { useAutoRefreshStore } from './autoRefresh'
-import { formatCSTRange } from '@/utils/timezone'
-import { formatDateGroup, formatDate } from '@/utils/date'
-import {
-  assertChronologicalOrder,
-  getMessageTimestamp,
-  getLatestMessageTime,
-  getFirstMessageTime,
-  fetchSmartHistoryMessages,
-  deduplicateMessages,
-  detectTimeGap,
-  normalizeBatchToChronological,
-  mergeChronologicalMessages,
-  getHistoryAnchorBeforeTime,
-  isRealMessage,
-  loadMessagesInTimeRange,
-  handleEmptyResult,
-  checkDataConnection,
-  estimateMessageCount,
-  getGapEstimateConfidence,
-  mergeAdjacentGapMessages,
-  mergeTopAdjacentEmptyRanges,
-} from './chat/utils'
+import { computed } from 'vue'
+import { useChatMessagesStore } from './chatMessages'
+import { useChatSearchStore } from './chatSearch'
+import { useChatSelectionStore } from './chatSelection'
 
+/**
+ * @deprecated 请使用 useChatMessagesStore / useChatSearchStore / useChatSelectionStore / useChatExportStore
+ */
 export const useChatStore = defineStore('chat', () => {
-  const appStore = useAppStore()
-  const cacheStore = useMessageCacheStore()
-  const refreshStore = useAutoRefreshStore()
+  const messagesStore = useChatMessagesStore()
+  const searchStore = useChatSearchStore()
+  const selectionStore = useChatSelectionStore()
 
-  // 初始化缓存和自动刷新（移到 init() action 中，避免 store 创建时的副作用）
-  // 监听缓存更新事件（移到 init() action 中）
+  // ==================== Re-exported State ====================
 
-  // ==================== State ====================
+  // From chatMessages
+  const messages = messagesStore.messages
+  const currentTalker = messagesStore.currentTalker
+  const totalMessages = messagesStore.totalMessages
+  const currentPage = messagesStore.currentPage
+  const pageSize = messagesStore.pageSize
+  const hasMore = messagesStore.hasMore
+  const playingVoiceId = messagesStore.playingVoiceId
+  const loading = messagesStore.loading
+  const error = messagesStore.error
+  const loadingHistory = messagesStore.loadingHistory
+  const historyLoadMessage = messagesStore.historyLoadMessage
+  const scrollTargetId = messagesStore.scrollTargetId
 
-  /**
-   * 消息列表
-   */
-  const messages = ref<Message[]>([])
+  // From chatSearch
+  const searchKeyword = searchStore.searchKeyword
+  const searchResults = searchStore.searchResults
+  const searchLoading = searchStore.searchLoading
 
-  /**
-   * 当前会话 ID
-   */
-  const currentTalker = ref<string>('')
+  // From chatSelection
+  const selectedMessageIds = selectionStore.selectedMessageIds
 
-  /**
-   * 消息总数
-   */
-  const totalMessages = ref(0)
+  // ==================== Re-exported Getters ====================
 
-  /**
-   * 当前页码
-   */
-  const currentPage = ref(1)
+  const currentMessages = messagesStore.currentMessages
+  const messagesByDate = messagesStore.messagesByDate
+  const hasSelectedMessages = selectionStore.hasSelectedMessages
+  const selectedCount = selectionStore.selectedCount
+  const hasSearchResults = searchStore.hasSearchResults
+  const mediaMessages = messagesStore.mediaMessages
+  const imageMessages = messagesStore.imageMessages
+  const videoMessages = messagesStore.videoMessages
+  const fileMessages = messagesStore.fileMessages
 
-  /**
-   * 每页大小（直接使用 appStore.config.pageSize，避免不同步）
-   */
-  const pageSize = computed(() => appStore.config.pageSize)
+  // ==================== Re-exported Actions ====================
 
-  /**
-   * 是否还有更多消息
-   */
-  const hasMore = ref(true)
+  // chatMessages actions
+  const loadMessages = messagesStore.loadMessages
+  const loadMoreMessages = messagesStore.loadMoreMessages
+  const loadHistoryMessages = messagesStore.loadHistoryMessages
+  const loadGapMessages = messagesStore.loadGapMessages
+  const removeGapMessages = messagesStore.removeGapMessages
+  const removeGapMessage = messagesStore.removeGapMessage
+  const hasGapMessage = messagesStore.hasGapMessage
+  const refreshMessages = messagesStore.refreshMessages
+  const switchSession = messagesStore.switchSession
+  const getMessageById = messagesStore.getMessageById
+  const getMessageIndex = messagesStore.getMessageIndex
+  const jumpToMessage = messagesStore.jumpToMessage
+  const setPlayingVoice = messagesStore.setPlayingVoice
+  const getMessageStats = messagesStore.getMessageStats
+  const clearError = messagesStore.clearError
+  const init = messagesStore.init
+  const cleanup = messagesStore.cleanup
 
-  /**
-   * 搜索关键词
-   */
-  const searchKeyword = ref('')
+  // chatMessages cache/refresh 封装
+  const getCacheMetadata = messagesStore.getCacheMetadata
+  const removeCache = messagesStore.removeCache
+  const getCache = messagesStore.getCache
+  const isAutoRefreshEnabled = messagesStore.isAutoRefreshEnabled
+  const triggerRefresh = messagesStore.triggerRefresh
+  const handleCacheUpdateData = messagesStore.handleCacheUpdateData
 
-  /**
-   * 搜索结果
-   */
-  const searchResults = ref<Message[]>([])
+  // chatSearch actions
+  const searchMessages = searchStore.searchMessages
+  const clearSearch = searchStore.clearSearch
 
-  /**
-   * 选中的消息 ID 列表
-   */
-  const selectedMessageIds = ref<Set<number>>(new Set())
+  // chatSelection actions
+  const selectMessage = selectionStore.selectMessage
+  const deselectMessage = selectionStore.deselectMessage
+  const toggleMessageSelection = selectionStore.toggleMessageSelection
+  const selectAllMessages = selectionStore.selectAllMessages
+  const clearSelection = selectionStore.clearSelection
+  const getSelectedMessages = selectionStore.getSelectedMessagesList
+  const deleteSelectedMessages = selectionStore.deleteSelectedMessages
 
-  /**
-   * 正在播放的语音消息 ID
-   */
-  const playingVoiceId = ref<number | null>(null)
-
-  /**
-   * 消息加载状态
-   */
-  const loading = ref(false)
-
-  /**
-   * 搜索加载状态
-   */
-  const searchLoading = ref(false)
-
-  /**
-   * 错误信息
-   */
-  const error = ref<Error | null>(null)
-
-  /**
-   * 历史消息加载状态
-   */
-  const loadingHistory = ref(false)
-
-  /**
-   * 历史消息加载提示信息
-   */
-  const historyLoadMessage = ref('')
-
-  // ==================== Getters ====================
-
-  /**
-   * 当前会话的消息列表
-   */
-  const currentMessages = computed(() => {
-    if (!currentTalker.value) return []
-    return messages.value.filter(msg => msg.talker === currentTalker.value)
-  })
-
-  /**
-   * 按日期分组的消息, 返回一个对象数组
-   * [{ date: '2023-11-11', formattedDate: '昨天', messages: [...] }]
-   */
-  const messagesByDate = computed(() => {
-    const grouped: Record<string, { formattedDate: string; messages: Message[] }> = {}
-
-    currentMessages.value.forEach(message => {
-      // 优先使用 time（ISO 字符串），回退到 createTime（Unix 秒）
-      const timestamp = message.time || message.createTime
-
-      // 调试日志
-      if (appStore.isDebug && !timestamp) {
-        console.warn('⚠️ Message missing time fields:', {
-          id: message.id,
-          seq: message.seq,
-          time: message.time,
-          createTime: message.createTime,
-        })
-        return // 跳过没有时间戳的消息
-      }
-
-      // 解析日期对象
-      const dateObj =
-        typeof timestamp === 'string'
-          ? new Date(timestamp)
-          : new Date(timestamp < 10000000000 ? timestamp * 1000 : timestamp)
-
-      if (isNaN(dateObj.getTime())) {
-        if (appStore.isDebug) {
-          console.warn('⚠️ Invalid date format:', { timestamp, message })
-        }
-        return // 跳过无效日期的消息
-      }
-
-      const canonicalDate = formatDate(dateObj) // YYYY-MM-DD
-      const formattedDate = formatDateGroup(timestamp)
-
-      if (!grouped[canonicalDate]) {
-        grouped[canonicalDate] = {
-          formattedDate,
-          messages: [],
-        }
-      }
-      grouped[canonicalDate].messages.push(message)
-    })
-
-    // 转换为数组并返回（仅分组，不做排序纠错；顺序由上游 messages 保证）
-    return Object.entries(grouped).map(([date, data]) => ({
-      date,
-      formattedDate: data.formattedDate,
-      messages: data.messages,
-    }))
-  })
-
-  /**
-   * 是否有选中的消息
-   */
-  const hasSelectedMessages = computed(() => selectedMessageIds.value.size > 0)
-
-  /**
-   * 选中的消息数量
-   */
-  const selectedCount = computed(() => selectedMessageIds.value.size)
-
-  /**
-   * 是否有搜索结果
-   */
-  const hasSearchResults = computed(() => searchResults.value.length > 0)
-
-  /**
-   * 媒体消息列表
-   */
-  const mediaMessages = computed(() => {
-    return currentMessages.value.filter(msg => mediaAPI.isMediaMessage(msg.type))
-  })
-
-  // ==================== 消息顺序辅助 ====================
-  const normalizeAndAssertBatch = (batch: Message[], label: string) => {
-    const normalized = normalizeBatchToChronological(batch, appStore.isDebug)
-    assertChronologicalOrder(normalized, appStore.isDebug, `${label}:normalized`)
-    return normalized
+  // exportSelectedMessages stub (向后兼容)
+  const exportSelectedMessages = async (_format: 'json' | 'csv' | 'text' = 'json') => {
+    // 此方法原为空 stub，真正的导出逻辑在 useChatExportStore
   }
 
-  const mergeWithCurrentMessages = (incomingBatch: Message[], label: string) => {
-    const current = normalizeBatchToChronological(messages.value, appStore.isDebug)
-    const incoming = normalizeBatchToChronological(incomingBatch, appStore.isDebug)
+  // ==================== $reset ====================
 
-    const currentFirst = getFirstRealMessage(current)
-    const currentLast = getLastRealMessage(current)
-    const incomingFirst = getFirstRealMessage(incoming)
-    const incomingLast = getLastRealMessage(incoming)
-
-    if (!currentFirst || !currentLast || !incomingFirst || !incomingLast) {
-      messages.value = mergeChronologicalMessages(current, incoming)
-      assertChronologicalOrder(messages.value, appStore.isDebug, `${label}:merged`)
-      return
-    }
-
-    const currentFirstTs = getMessageTimestamp(currentFirst)
-    const currentLastTs = getMessageTimestamp(currentLast)
-    const incomingFirstTs = getMessageTimestamp(incomingFirst)
-    const incomingLastTs = getMessageTimestamp(incomingLast)
-
-    if (incomingLastTs <= currentFirstTs) {
-      messages.value = [...incoming, ...current]
-      assertChronologicalOrder(messages.value, appStore.isDebug, `${label}:prepend`)
-      return
-    }
-
-    if (incomingFirstTs >= currentLastTs) {
-      messages.value = [...current, ...incoming]
-      assertChronologicalOrder(messages.value, appStore.isDebug, `${label}:append`)
-      return
-    }
-
-    messages.value = mergeChronologicalMessages(current, incoming)
-    assertChronologicalOrder(messages.value, appStore.isDebug, `${label}:merged`)
-  }
-
-  const getFirstRealMessage = (list: Message[]) => list.find(isRealMessage)
-
-  const getLastRealMessage = (list: Message[]) => {
-    for (let i = list.length - 1; i >= 0; i--) {
-      if (isRealMessage(list[i])) return list[i]
-    }
-    return undefined
-  }
-
-  const getChronologicalMessages = () => {
-    return normalizeBatchToChronological(messages.value, appStore.isDebug)
-  }
-
-  const assertHistoryAnchorProgress = (
-    previousBeforeTime: string | number,
-    nextBeforeTime: string | number | undefined,
-    label: string
-  ) => {
-    if (!appStore.isDebug || !nextBeforeTime) return
-
-    const prevTs =
-      typeof previousBeforeTime === 'string'
-        ? new Date(previousBeforeTime).getTime()
-        : previousBeforeTime < 10000000000
-          ? previousBeforeTime * 1000
-          : previousBeforeTime
-    const nextTs =
-      typeof nextBeforeTime === 'string'
-        ? new Date(nextBeforeTime).getTime()
-        : nextBeforeTime < 10000000000
-          ? nextBeforeTime * 1000
-          : nextBeforeTime
-
-    if (!isNaN(prevTs) && !isNaN(nextTs) && nextTs >= prevTs) {
-      console.warn('⚠️ History anchor did not move earlier', {
-        label,
-        previousBeforeTime,
-        nextBeforeTime,
-      })
-    }
-  }
-
-  /**
-   * 图片消息列表
-   */
-  const imageMessages = computed(() => {
-    return currentMessages.value.filter(msg => msg.type === 3)
-  })
-
-  /**
-   * 视频消息列表
-   */
-  const videoMessages = computed(() => {
-    return currentMessages.value.filter(msg => msg.type === 43)
-  })
-
-  /**
-   * 文件消息列表
-   */
-  const fileMessages = computed(() => {
-    return currentMessages.value.filter(msg => msg.type === 49)
-  })
-
-  // ==================== Actions ====================
-
-  /**
-   * 加载消息列表
-   * 优先从缓存加载，如果没有缓存则从 API 加载并缓存
-   */
-  async function loadMessages(
-    talker: string,
-    page = 1,
-    append = false,
-    timeRange?: string,
-    bottom = 0
-  ) {
-    //如果 beforeTime 不包含 ~ , 则说明不是时间范围， 则需要补充成一个时间范围
-    if (timeRange && !timeRange.includes('~')) {
-      // 获取beforeTime 当天的 0 点
-      const beforeDate =
-        typeof timeRange === 'string' ? new Date(timeRange) : new Date(timeRange * 1000)
-      const startOfDay = new Date(
-        beforeDate.getFullYear(),
-        beforeDate.getMonth(),
-        beforeDate.getDate()
-      )
-      // 获取beforeTime 当天的 23:59:59
-      const endOfDay = timeRange
-
-      timeRange = formatCSTRange(startOfDay, new Date(endOfDay))
-    }
-    try {
-      loading.value = true
-      error.value = null
-      appStore.setLoading('messages', true)
-
-      let result: Message[] = []
-      const limit = pageSize.value
-
-      // 第一页且没有时间过滤时，优先尝试从缓存加载
-      if (page === 1 && !append) {
-        const cached = cacheStore.get(talker)
-        if (cached) {
-          result = cached
-          if (appStore.isDebug) {
-            console.log('📦 Loaded from cache', { talker, count: result.length })
-          }
-
-          // 后台触发刷新（如果启用）
-          if (refreshStore.config.enabled) {
-            // 获取缓存中最新消息的时间（东八区 ISO 格式）
-            const startFromTime = getLatestMessageTime(cached)
-            //if(!timeRange || !startFromTime || timeRange > startFromTime)
-            {
-              if (appStore.isDebug) {
-                console.log('⏳ Triggering background refresh for talker:', talker)
-                console.log('📅 Start from time:', startFromTime)
-              }
-
-              refreshStore.refreshOne(talker, 1, startFromTime).catch(err => {
-                console.error('Background refresh failed:', err)
-              })
-            }
-          }
-        }
-      }
-
-      // 如果没有缓存，从 API 加载
-      if (result.length === 0) {
-        const offset = (page - 1) * limit
-
-        // 直接使用传入的时间字符串参数
-        result = await chatlogAPI.getSessionMessages(talker, timeRange, limit, offset, bottom)
-        result = normalizeAndAssertBatch(result, 'loadMessages:api')
-
-        // 第一页时保存到缓存
-        if (page === 1 && !append) {
-          cacheStore.set(talker, result)
-        }
-      }
-
-      // 调试：输出第一条消息的时间信息
-      if (result.length > 0) {
-        const firstMsg = result[0]
-        const lastMsg = result[result.length - 1]
-        if (appStore.isDebug) {
-          console.log('📝 Batch order debug:', {
-            count: result.length,
-            first: {
-              id: firstMsg.id,
-              seq: firstMsg.seq,
-              time: firstMsg.time,
-              timestamp: getMessageTimestamp(firstMsg),
-            },
-            last: {
-              id: lastMsg.id,
-              seq: lastMsg.seq,
-              time: lastMsg.time,
-              timestamp: getMessageTimestamp(lastMsg),
-            },
-          })
-        }
-      }
-
-      // 插入 EmptyRange 消息
-      if (timeRange && page === 1 && !append) {
-        const suggestedBeforeTime = parseTimeRangeStart(timeRange)
-        const newestMsgTime = getFirstMessageTime(result)
-
-        const emptyRangeMessage = createEmptyRangeMessage(
-          talker,
-          timeRange,
-          newestMsgTime,
-          0, // triedTimes
-          suggestedBeforeTime
-        )
-
-        if (appStore.isDebug) {
-          console.log('📝 EmptyRange message created for empty load:', {
-            talker,
-            timeRange: timeRange,
-            suggestedBeforeTime: new Date(suggestedBeforeTime).toISOString(),
-          })
-        }
-
-        result = [emptyRangeMessage, ...result]
-      }
-
-      if (append) {
-        mergeWithCurrentMessages(result, 'loadMessages:append')
-      } else {
-        messages.value = normalizeAndAssertBatch(result, 'loadMessages:replace')
-        assertChronologicalOrder(messages.value, appStore.isDebug, 'loadMessages:replace')
-        currentTalker.value = talker
-      }
-
-      currentPage.value = page
-      hasMore.value = result.length >= limit && result.every(m => !m.isEmptyRange)
-
-      if (appStore.isDebug) {
-        console.log('💬 Messages loaded', {
-          talker,
-          page,
-          count: result.length,
-          hasMore: hasMore.value,
-        })
-      }
-
-      return result
-    } catch (err) {
-      error.value = err as Error
-      appStore.setError(err as Error)
-      throw err
-    } finally {
-      loading.value = false
-      appStore.setLoading('messages', false)
-    }
-  }
-
-  /**
-   * 加载更多消息
-   */
-  async function loadMoreMessages() {
-    console.warn('loadMoreMessages called')
-    if (!hasMore.value || loading.value || !currentTalker.value) {
-      return
-    }
-
-    const nextPage = currentPage.value + 1
-    await loadMessages(currentTalker.value, nextPage, true)
-  }
-
-  /**
-   * 加载历史消息（下拉加载）
-   * @param talker 会话 ID
-   * @param beforeTime 最早消息的时间（ISO 8601 字符串或 Unix 秒时间戳）
-   * @param offset 偏移量，用于同一时间范围内的分页
-   * @returns 加载的历史消息列表和元数据
-   */
-
-  async function loadHistoryMessages(
-    talker: string,
-    beforeTime: string | number
-  ): Promise<{ messages: Message[]; hasMore: boolean; timeRange: string; offset: number }> {
-    if (loadingHistory.value) {
-      console.warn('History loading already in progress')
-      return { messages: [], hasMore: false, timeRange: '', offset: 0 }
-    }
-
-    try {
-      loadingHistory.value = true
-      historyLoadMessage.value = ''
-      appStore.setLoading('history', true)
-
-      const limit = pageSize.value // 使用配置的 pageSize
-
-      let result: Message[] = []
-      let finalTimeRange = ''
-      let retryCount = 0
-
-      // 使用智能策略获取消息
-      const smartResult = await fetchSmartHistoryMessages(
-        messages.value,
-        talker,
-        beforeTime,
-        limit,
-        0,
-        appStore.isDebug
-      )
-      result = smartResult.result
-      result = normalizeAndAssertBatch(result, 'loadHistoryMessages:api')
-      finalTimeRange = smartResult.finalTimeRange
-      retryCount = smartResult.retryCount
-
-      // 如果返回空结果
-      if (result.length === 0) {
-        const emptyResult = handleEmptyResult(
-          messages.value,
-          talker,
-          finalTimeRange,
-          0,
-          retryCount,
-          appStore.isDebug
-        )
-        if (emptyResult.newMessages && emptyResult.newMessages.length > 0) {
-          const normalizedEmptyMessages = normalizeAndAssertBatch(
-            emptyResult.messages,
-            'loadHistoryMessages:empty'
-          )
-          messages.value = mergeTopAdjacentEmptyRanges(
-            normalizedEmptyMessages,
-            talker,
-            appStore.isDebug
-          )
-          assertChronologicalOrder(messages.value, appStore.isDebug, 'loadHistoryMessages:empty')
-        }
-        return {
-          messages: emptyResult.newMessages,
-          hasMore: emptyResult.hasMore,
-          timeRange: emptyResult.timeRange,
-          offset: 0,
-        }
-      }
-
-      // 成功加载到消息
-      if (appStore.isDebug) {
-        console.log('✅ History messages loaded:', {
-          count: result.length,
-          timeRange: finalTimeRange,
-        })
-      }
-
-      // 消息去重
-      const uniqueNewMessages = deduplicateMessages(messages.value, result, appStore.isDebug)
-      const normalizedUniqueMessages = normalizeAndAssertBatch(
-        uniqueNewMessages,
-        'loadHistoryMessages:dedup'
-      )
-
-      // 判断是否还有更多历史消息
-      // 如果返回的消息数等于 limit，说明该时间范围还有更多数据
-      const hasMoreHistory = result.length >= limit
-
-      // 如果满载，插入 Gap 消息到底部，标记更新的未加载数据
-      // 如果满载，则不检测 EmptyRange（两者互斥）
-      let gapToInsert: Message | null = null
-      let emptyRangeToInsert: Message | null = null
-
-      if (hasMoreHistory && normalizedUniqueMessages.length > 0) {
-        // 检查新数据是否与已有数据衔接
-        const isConnected = checkDataConnection(result, messages.value)
-
-        if (!isConnected) {
-          // 如果未衔接，才插入 Gap（标记更新的未加载数据）
-          const requestedEndTime = parseTimeRangeEnd(finalTimeRange)
-          const newestLoadedMsg = normalizedUniqueMessages[normalizedUniqueMessages.length - 1]
-          const newestLoadedTime = getMessageTimestamp(newestLoadedMsg)
-
-          // 根据消息密度估算 Gap 范围内的消息数量
-          const estimatedCount = estimateMessageCount(
-            messages.value,
-            talker,
-            newestLoadedTime,
-            requestedEndTime
-          )
-          const estimateConfidence = getGapEstimateConfidence(
-            messages.value,
-            talker,
-            newestLoadedTime,
-            requestedEndTime
-          )
-
-          // Gap 标记更新的未加载部分
-          gapToInsert = createGapMessage(
-            talker,
-            newestLoadedTime,
-            requestedEndTime,
-            estimatedCount,
-            estimateConfidence
-          )
-
-          if (appStore.isDebug) {
-            console.log('📌 Creating Gap message at bottom for newer data:', {
-              newestLoaded: new Date(newestLoadedTime).toISOString(),
-              requestedEnd: new Date(requestedEndTime).toISOString(),
-              estimatedCount,
-              estimateConfidence,
-              actualLoaded: result.length,
-            })
-          }
-        } else {
-          if (appStore.isDebug) {
-            console.log('✅ New data is connected to existing data, no Gap needed')
-          }
-        }
-      } else {
-        // 如果未满载，检测时间间隙，插入 EmptyRange
-        emptyRangeToInsert = detectTimeGap(
-          talker,
-          finalTimeRange,
-          0,
-          normalizedUniqueMessages,
-          appStore.isDebug
-        )
-      }
-
-      // 插入消息到列表
-      // EmptyRange 在顶部（未满载时），Gap 在底部（满载时），两者互斥
-      const messagesToInsert: Message[] = []
-      if (emptyRangeToInsert) {
-        messagesToInsert.push(emptyRangeToInsert)
-      }
-      messagesToInsert.push(...normalizedUniqueMessages)
-      if (gapToInsert) {
-        messagesToInsert.push(gapToInsert)
-      }
-      mergeWithCurrentMessages(messagesToInsert, 'loadHistoryMessages:merge')
-      messages.value = mergeAdjacentGapMessages(messages.value, talker, appStore.isDebug)
-      messages.value = mergeTopAdjacentEmptyRanges(messages.value, talker, appStore.isDebug)
-
-      const nextAnchor = getHistoryAnchorBeforeTime(messages.value)
-      assertHistoryAnchorProgress(beforeTime, nextAnchor, 'loadHistoryMessages')
-
-      // 清除提示信息
-      historyLoadMessage.value = ''
-
-      if (appStore.isDebug) {
-        const gapCount = messages.value.filter(
-          m => m.isGap && m.talker === talker
-        ).length
-        const emptyRangeCount = messages.value.filter(
-          m => m.isEmptyRange && m.talker === talker
-        ).length
-        console.log('📊 History loading result:', {
-          loaded: result.length,
-          unique: uniqueNewMessages.length,
-          normalizedUnique: normalizedUniqueMessages.length,
-          hasMore: hasMoreHistory,
-          gapInserted: !!gapToInsert,
-          emptyRangeInserted: !!emptyRangeToInsert,
-          gapCount,
-          emptyRangeCount,
-        })
-      }
-
-      return {
-        messages: normalizedUniqueMessages,
-        hasMore: hasMoreHistory,
-        timeRange: finalTimeRange,
-        offset: 0,
-      }
-    } catch (err) {
-      error.value = err as Error
-      appStore.setError(err as Error)
-      historyLoadMessage.value = '加载历史消息失败，请重试'
-      return { messages: [], hasMore: false, timeRange: '', offset: 0 }
-    } finally {
-      loadingHistory.value = false
-      appStore.setLoading('history', false)
-    }
-  }
-
-  /**
-   * 刷新消息列表
-   */
-  /**
-   * 加载 Gap 消息对应的历史数据
-   */
-  async function loadGapMessages(
-    gapMessage: Message
-  ): Promise<{ success: boolean; hasMore: boolean }> {
-    if (!gapMessage.isGap || !gapMessage.gapData) {
-      console.warn('Invalid gap message')
-      return { success: false, hasMore: false }
-    }
-
-    const { timeRange } = gapMessage.gapData
-    const limit = pageSize.value
-
-    if (appStore.isDebug) {
-      console.log('🔄 Loading Gap messages:', {
-        timeRange,
-        gapId: gapMessage.id,
-        limit,
-      })
-    }
-
-    try {
-      // 移除当前 Gap 消息
-      removeGapMessage(gapMessage.id)
-
-      // 直接加载 Gap 标记的时间范围数据（使用 bottom=1 从末尾开始）
-      const result = normalizeAndAssertBatch(
-        await loadMessagesInTimeRange(gapMessage.talker, timeRange, limit, 0),
-        'loadGapMessages:api'
-      )
-
-      if (appStore.isDebug) {
-        console.log('✅ Gap messages loaded:', {
-          count: result.length,
-          limit,
-        })
-      }
-
-      if (result.length === 0) {
-        // 没有数据，不需要处理
-        return { success: false, hasMore: false }
-      }
-
-      // 消息去重
-      const uniqueNewMessages = deduplicateMessages(messages.value, result, appStore.isDebug)
-      const normalizedUniqueMessages = normalizeAndAssertBatch(
-        uniqueNewMessages,
-        'loadGapMessages:dedup'
-      )
-
-      // 判断是否还有更多数据
-      const hasMoreInGap = result.length >= limit
-      const isConnected = checkDataConnection(result, messages.value)
-
-      // 仅在明确重复衔接时才允许 Gap 消亡；否则保留/更新 Gap
-      let newGapToInsert: Message | null = null
-      if (!isConnected && normalizedUniqueMessages.length > 0) {
-        const requestedEndTime = parseTimeRangeEnd(timeRange)
-        const newestLoadedMsg = normalizedUniqueMessages[normalizedUniqueMessages.length - 1]
-        const newestLoadedTime = getMessageTimestamp(newestLoadedMsg)
-
-        // 根据消息密度估算剩余消息数量
-        const estimatedCount = estimateMessageCount(
-          messages.value,
-          gapMessage.talker,
-          newestLoadedTime,
-          requestedEndTime
-        )
-        const estimateConfidence = getGapEstimateConfidence(
-          messages.value,
-          gapMessage.talker,
-          newestLoadedTime,
-          requestedEndTime
-        )
-
-        // 无论本批是否满载，只要没有明确衔接就保留/更新 Gap
-        newGapToInsert = createGapMessage(
-          gapMessage.talker,
-          newestLoadedTime,
-          requestedEndTime,
-          estimatedCount,
-          estimateConfidence
-        )
-
-        if (appStore.isDebug) {
-          console.log('📌 Keep/update Gap after load (no explicit overlap):', {
-            newestLoaded: new Date(newestLoadedTime).toISOString(),
-            requestedEnd: new Date(requestedEndTime).toISOString(),
-            estimatedCount,
-            estimateConfidence,
-            actualLoaded: result.length,
-            hasMoreInGap,
-            isConnected,
-          })
-        }
-      } else if (appStore.isDebug) {
-        console.log('✅ Gap resolved by explicit duplicate overlap', {
-          hasMoreInGap,
-          isConnected,
-          loaded: result.length,
-        })
-      }
-
-      // 插入新加载的消息（和可能的新 Gap）到列表
-      const messagesToInsert: Message[] = []
-      messagesToInsert.push(...normalizedUniqueMessages)
-      if (newGapToInsert) {
-        messagesToInsert.push(newGapToInsert)
-      }
-      mergeWithCurrentMessages(messagesToInsert, 'loadGapMessages:merge')
-      messages.value = mergeAdjacentGapMessages(messages.value, gapMessage.talker, appStore.isDebug)
-
-      const nextAnchor = getHistoryAnchorBeforeTime(messages.value)
-      assertHistoryAnchorProgress(gapMessage.gapData.beforeTime, nextAnchor, 'loadGapMessages')
-
-      if (appStore.isDebug) {
-        const gapCount = messages.value.filter(
-          m => m.isGap && m.talker === gapMessage.talker
-        ).length
-        console.log('📊 Gap load metrics:', {
-          talker: gapMessage.talker,
-          loaded: result.length,
-          unique: normalizedUniqueMessages.length,
-          isConnected,
-          hasMoreInGap,
-          gapCount,
-        })
-      }
-
-      return {
-        success: result.length > 0,
-        hasMore: hasMoreInGap,
-      }
-    } catch (err) {
-      console.error('Gap messages loading failed:', err)
-      // 加载失败，重新插入 Gap 消息
-      const gapIndex = messages.value.findIndex(m => !m.isGap && !m.isEmptyRange)
-      if (gapIndex !== -1) {
-        messages.value.splice(gapIndex, 0, gapMessage)
-      } else {
-        messages.value.unshift(gapMessage)
-      }
-      return { success: false, hasMore: false }
-    }
-  }
-
-  /**
-   * 移除指定会话的所有 Gap 消息
-   */
-  function removeGapMessages(talker: string) {
-    messages.value = messages.value.filter(msg => !(msg.isGap && msg.talker === talker))
-  }
-
-  /**
-   * 移除指定的 Gap 消息
-   */
-  function removeGapMessage(gapId: number) {
-    messages.value = messages.value.filter(msg => msg.id !== gapId)
-  }
-
-  /**
-   * 检查会话是否存在 Gap 消息
-   */
-  function hasGapMessage(talker: string): boolean {
-    return messages.value.some(msg => msg.isGap && msg.talker === talker)
-  }
-
-  async function refreshMessages() {
-    if (!currentTalker.value) return
-    await loadMessages(currentTalker.value, 1, false)
-  }
-
-  /**
-   * 切换会话
-   */
-  async function switchSession(talker: string) {
-    if (talker === currentTalker.value) return
-
-    // 清空当前消息
-    messages.value = []
-    currentPage.value = 1
-    hasMore.value = true
-    clearSelection()
-
-    // 加载新会话的消息
-    await loadMessages(talker, 1, false)
-  }
-
-  /**
-   * 搜索消息
-   */
-  async function searchMessages(keyword: string, params?: Partial<SearchParams>) {
-    try {
-      searchLoading.value = true
-      searchKeyword.value = keyword
-      appStore.setLoading('search', true)
-
-      const searchParams: SearchParams = {
-        keyword,
-        talker: currentTalker.value || undefined,
-        limit: params?.limit || 100,
-        offset: params?.offset || 0,
-        ...params,
-      }
-
-      const result = await chatlogAPI.searchMessages(searchParams)
-      searchResults.value = result || []
-
-      if (appStore.isDebug) {
-        console.log('🔍 Search completed', {
-          keyword,
-          count: searchResults.value.length,
-        })
-      }
-
-      return searchResults.value
-    } catch (err) {
-      error.value = err as Error
-      appStore.setError(err as Error)
-      throw err
-    } finally {
-      searchLoading.value = false
-      appStore.setLoading('search', false)
-    }
-  }
-
-  /**
-   * 清除搜索
-   */
-  function clearSearch() {
-    searchKeyword.value = ''
-    searchResults.value = []
-  }
-
-  /**
-   * 获取指定 ID 的消息
-   */
-  function getMessageById(id: number): Message | undefined {
-    return messages.value.find(msg => msg.id === id)
-  }
-
-  /**
-   * 获取消息索引
-   */
-  function getMessageIndex(id: number): number {
-    return currentMessages.value.findIndex(msg => msg.id === id)
-  }
-
-  /**
-   * 跳转到指定消息（设置 scrollTargetId，由组件执行 DOM 滚动）
-   */
-  const scrollTargetId = ref<number | null>(null)
-
-  async function jumpToMessage(messageId: number) {
-    const message = getMessageById(messageId)
-    if (!message) {
-      console.warn('Message not found in current list:', messageId)
-      return
-    }
-    scrollTargetId.value = messageId
-  }
-
-  /**
-   * 选择消息
-   */
-  function selectMessage(id: number) {
-    selectedMessageIds.value.add(id)
-  }
-
-  /**
-   * 取消选择消息
-   */
-  function deselectMessage(id: number) {
-    selectedMessageIds.value.delete(id)
-  }
-
-  /**
-   * 切换消息选择状态
-   */
-  function toggleMessageSelection(id: number) {
-    if (selectedMessageIds.value.has(id)) {
-      deselectMessage(id)
-    } else {
-      selectMessage(id)
-    }
-  }
-
-  /**
-   * 全选消息
-   */
-  function selectAllMessages() {
-    currentMessages.value.forEach(msg => {
-      selectedMessageIds.value.add(msg.id)
-    })
-  }
-
-  /**
-   * 清除选择
-   */
-  function clearSelection() {
-    selectedMessageIds.value.clear()
-  }
-
-  /**
-   * 获取选中的消息
-   */
-  function getSelectedMessages(): Message[] {
-    return currentMessages.value.filter(msg => selectedMessageIds.value.has(msg.id))
-  }
-
-  /**
-   * 删除选中的消息（本地）
-   */
-  function deleteSelectedMessages() {
-    const selectedIds = Array.from(selectedMessageIds.value)
-    messages.value = messages.value.filter(msg => !selectedIds.includes(msg.id))
-    clearSelection()
-  }
-
-  /**
-   * 导出选中的消息
-   */
-  async function exportSelectedMessages(format: 'json' | 'csv' | 'text' = 'json') {
-    const selectedIds = selectedMessageIds.value
-    const selected = getChronologicalMessages().filter(msg => selectedIds.has(msg.id))
-    if (selected.length === 0) return
-
-    const ids = selected.map(msg => msg.id).join(',')
-
-    // TODO: 根据格式导出消息
-  }
-
-  /**
-   * 设置正在播放的语音
-   */
-  function setPlayingVoice(id: number | null) {
-    playingVoiceId.value = id
-  }
-
-  /**
-   * 获取消息统计
-   */
-  function getMessageStats() {
-    const stats = {
-      total: currentMessages.value.length,
-      text: 0,
-      image: 0,
-      voice: 0,
-      video: 0,
-      file: 0,
-      other: 0,
-    }
-
-    currentMessages.value.forEach(msg => {
-      switch (msg.type) {
-        case 1:
-          stats.text++
-          break
-        case 3:
-          stats.image++
-          break
-        case 34:
-          stats.voice++
-          break
-        case 43:
-          stats.video++
-          break
-        case 49:
-          stats.file++
-          break
-        default:
-          stats.other++
-      }
-    })
-
-    return stats
-  }
-
-  /**
-   * 清除错误
-   */
-  function clearError() {
-    error.value = null
-  }
-
-  /**
-   * 重置状态
-   */
   function $reset() {
-    messages.value = []
-    currentTalker.value = ''
-    totalMessages.value = 0
-    currentPage.value = 1
-    hasMore.value = true
-    searchKeyword.value = ''
-    searchResults.value = []
-    selectedMessageIds.value.clear()
-    playingVoiceId.value = null
-    loading.value = false
-    searchLoading.value = false
-    error.value = null
-    loadingHistory.value = false
-    historyLoadMessage.value = ''
+    messagesStore.$reset()
+    searchStore.$reset()
+    selectionStore.$reset()
   }
-
-  // 封装方法：替代直接暴露 cacheStore/refreshStore
-  function getCacheMetadata() {
-    return cacheStore.metadata
-  }
-
-  function removeCache(talker: string) {
-    cacheStore.remove(talker)
-  }
-
-  function getCache(talker: string) {
-    return cacheStore.get(talker)
-  }
-
-  function isAutoRefreshEnabled() {
-    return refreshStore.config.enabled
-  }
-
-  function triggerRefresh(talker: string, count: number, startFromTime?: string) {
-    return refreshStore.refreshOne(talker, count, startFromTime)
-  }
-
-  // 缓存更新处理（由 autoRefresh store 直接调用，替代 CustomEvent）
-  function handleCacheUpdateData(talker: string, newMessages: Message[]) {
-    if (appStore.isDebug) {
-      console.log('🛎️ Chatlog cache updated:', { talker })
-    }
-
-    // 如果是当前打开的会话，更新消息列表
-    if (talker === currentTalker.value) {
-      const existingIds = new Set(messages.value.map(m => `${m.id}_${m.seq}`))
-      const actualNewMessages = newMessages.filter(
-        (m: Message) => !existingIds.has(`${m.id}_${m.seq}`)
-      )
-
-      if (actualNewMessages.length > 0) {
-        mergeWithCurrentMessages(actualNewMessages, 'cacheUpdate')
-
-        if (appStore.isDebug) {
-          console.log(`🔄 Auto-updated messages for current session: ${talker}`, {
-            existingCount: messages.value.length - actualNewMessages.length,
-            newMessagesCount: actualNewMessages.length,
-          })
-        }
-      }
-    }
-  }
-
-  /**
-   * 初始化：启动缓存和自动刷新
-   * 应在组件 onMounted 中调用，而非 store 创建时自动执行
-   */
-  function init() {
-    if (!cacheStore.metadata.length) {
-      cacheStore.init()
-    }
-    if (refreshStore.config.enabled && !refreshStore.timer) {
-      refreshStore.init()
-    }
-  }
-
-  // 清理函数（不再需要移除事件监听器）
-  function cleanup() {}
-
-  // ==================== Return ====================
 
   return {
     // State
@@ -1186,6 +131,7 @@ export const useChatStore = defineStore('chat', () => {
     error,
     loadingHistory,
     historyLoadMessage,
+    scrollTargetId,
 
     // Cache & Refresh 封装方法
     getCacheMetadata,
@@ -1222,7 +168,6 @@ export const useChatStore = defineStore('chat', () => {
     getMessageById,
     getMessageIndex,
     jumpToMessage,
-    scrollTargetId,
     selectMessage,
     deselectMessage,
     toggleMessageSelection,

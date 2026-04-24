@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue'
-import { useChatStore } from '@/stores/chat'
+import { useChatMessagesStore } from '@/stores/chatMessages'
 import { formatMinimalDate } from '@/utils/date'
 import { getHistoryAnchorBeforeTime } from '@/stores/chat/utils'
 import type { Message } from '@/types'
@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<Props>(), {
   initialTime: undefined,
 })
 
-const chatStore = useChatStore()
+const chatStore = useChatMessagesStore()
 
 // 引用
 const messageListRef = ref<HTMLElement | null>(null)

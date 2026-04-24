@@ -11,7 +11,7 @@ import {
   CircleCheck,
   ArrowDown,
 } from '@element-plus/icons-vue'
-import { useBatchSelectionStore } from '@/stores/batchSelection'
+import { useChatSelectionStore } from '@/stores/chatSelection'
 import type { Message } from '@/types'
 
 interface Props {
@@ -28,7 +28,7 @@ const emit = defineEmits<{
   export: []
 }>()
 
-const batchStore = useBatchSelectionStore()
+const batchStore = useChatSelectionStore()
 
 // 选中数量
 const selectedCount = computed(() => batchStore.selectedCount)

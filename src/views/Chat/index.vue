@@ -3,7 +3,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAppStore } from '@/stores/app'
 import { useSessionStore } from '@/stores/session'
-import { useChatStore } from '@/stores/chat'
+import { useChatMessagesStore } from '@/stores/chatMessages'
+import { useChatExportStore } from '@/stores/chatExport'
 import { useAutoRefreshManager } from '@/composables/useAutoRefreshManager'
 import { useMobileGesture } from '@/composables/useMobileGesture'
 import { useMobileSessionInfo } from '@/composables/useMobileSessionInfo'
@@ -22,7 +23,8 @@ import type { Session, SessionFilterType } from '@/types'
 
 const appStore = useAppStore()
 const sessionStore = useSessionStore()
-const chatStore = useChatStore()
+const chatMessagesStore = useChatMessagesStore()
+const chatExportStore = useChatExportStore()
 
 // 引用
 const sessionListRef = ref()
@@ -169,7 +171,7 @@ const handleBeforeUnload = (e: BeforeUnloadEvent) => {
 
 onMounted(async () => {
   // 初始化 chatStore（缓存、自动刷新、事件监听）
-  chatStore.init()
+  chatMessagesStore.init()
 
   // 初始化 sessionStore（本地置顶数据）
   sessionStore.init()
@@ -199,8 +201,8 @@ onUnmounted(() => {
   // 解绑移动端手势事件
   unbindGestureEvents()
 
-  // 清理 chatStore 事件监听器
-  chatStore.cleanup()
+  // 清理 chatMessagesStore 事件监听器
+  chatMessagesStore.cleanup()
 
   // 移除 beforeunload 事件监听
   window.removeEventListener('beforeunload', handleBeforeUnload)
