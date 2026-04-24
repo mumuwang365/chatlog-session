@@ -177,6 +177,11 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   }
 
   /**
+   * $reset 方法：重置 store 到初始状态
+   */
+  const $reset = resetOnboarding
+
+  /**
    * 从 localStorage 加载现有配置
    */
   const loadExistingConfig = () => {
@@ -226,5 +231,6 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     resetOnboarding,
     loadExistingConfig,
     shouldShowOnboarding,
+    $reset,
   }
 })

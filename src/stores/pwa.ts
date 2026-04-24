@@ -449,6 +449,21 @@ export const usePWAStore = defineStore('pwa', () => {
     }
   }
 
+  /**
+   * $reset 方法：重置 store 到初始状态
+   */
+  function $reset() {
+    swManager.value = null
+    swState.value = ServiceWorkerState.NOT_SUPPORTED
+    isOnline.value = navigator.onLine
+    isInstallable.value = false
+    isInstalled.value = false
+    installPromptEvent.value = null
+    updateAvailable.value = false
+    cacheInfo.value = null
+    lastUpdateCheck.value = null
+  }
+
   // ============================================================================
   // 返回
   // ============================================================================
@@ -485,5 +500,6 @@ export const usePWAStore = defineStore('pwa', () => {
     unregister,
     getInstallGuide,
     getStats,
+    $reset,
   }
 })

@@ -298,6 +298,16 @@ export const useBatchSelectionStore = defineStore('batch-selection', () => {
     }
   })
 
+  /**
+   * $reset 方法：重置 store 到初始状态
+   */
+  function $reset() {
+    isActive.value = false
+    selectedMessageIds.value = new Set()
+    selectedMessages.value = new Map()
+    selectionMode.value = 'messages'
+  }
+
   return {
     // State
     isActive,
@@ -332,6 +342,7 @@ export const useBatchSelectionStore = defineStore('batch-selection', () => {
     selectByType,
     exportAsText,
     exportAsJSON,
-    copyToClipboard
+    copyToClipboard,
+    $reset
   }
 })
