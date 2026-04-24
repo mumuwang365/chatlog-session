@@ -44,15 +44,8 @@ export function useSessionDetail(currentSession: () => Session | null) {
       return
     }
 
-    // 调试信息
-    console.log('🔍 打开会话详情')
-    console.log('currentSession:', currentSession())
-    console.log('sessionDetailContactId:', sessionDetailContactId.value)
-    console.log('contactStore.contacts 数量:', contactStore.contacts.length)
-
     // 查找匹配的联系人
     const matchedContact = contactStore.contacts.find(c => c.wxid === sessionDetailContactId.value)
-    console.log('找到的联系人:', matchedContact)
 
     sessionDetailDrawerVisible.value = true
   }

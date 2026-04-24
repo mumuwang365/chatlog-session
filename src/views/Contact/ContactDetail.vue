@@ -39,23 +39,14 @@ const { displayName: ownerDisplayName } = useDisplayNameReactive({
 
 // 加载联系人详情
 const loadContact = async () => {
-  console.log('🔍 ContactDetail.loadContact')
-  console.log('props.contactId:', props.contactId)
-  console.log('props.session:', props.session)
-  console.log('contactStore.contacts 数量:', contactStore.contacts.length)
-  
   if (props.contactId) {
     contact.value = contactStore.contacts.find(c => c.wxid === props.contactId) || null
-    console.log('找到的 contact:', contact.value)
     
     // 如果没找到联系人，尝试从 API 加载
     if (!contact.value) {
-      console.log('⚠️ 在 contactStore.contacts 中未找到联系人，尝试从 store 加载')
       try {
-        // 尝试通过 contactStore 获取联系人
         await contactStore.loadContacts()
         contact.value = contactStore.contacts.find(c => c.wxid === props.contactId) || null
-        console.log('重新加载后找到的 contact:', contact.value)
       } catch (err) {
         console.error('加载联系人失败:', err)
       }

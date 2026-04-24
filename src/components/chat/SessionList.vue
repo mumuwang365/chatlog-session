@@ -156,8 +156,6 @@ const handleRefresh = () => {
 
 // 自动刷新（包含会话列表刷新和消息刷新检测）
 const autoRefresh = async () => {
-  console.log('🔄 执行自动刷新会话列表...')
-
   // 1. 刷新会话列表
   handleRefresh()
 
@@ -166,7 +164,6 @@ const autoRefresh = async () => {
 
   // 3. 检测需要刷新消息的会话
   if (autoRefreshStore.config.enabled) {
-    console.log('🔄 检测需要刷新消息的会话...')
     try {
       await autoRefreshStore.detectNeedsRefresh()
 

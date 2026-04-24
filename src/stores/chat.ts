@@ -660,7 +660,9 @@ export const useChatStore = defineStore('chat', () => {
       historyLoadMessage.value = ''
 
       if (appStore.isDebug) {
-        const gapCount = messages.value.filter(m => m.isGap && m.talker === talker).length
+        const gapCount = messages.value.filter(
+          m => m.isGap && m.talker === talker
+        ).length
         const emptyRangeCount = messages.value.filter(
           m => m.isEmptyRange && m.talker === talker
         ).length
@@ -1027,7 +1029,6 @@ export const useChatStore = defineStore('chat', () => {
     const ids = selected.map(msg => msg.id).join(',')
 
     // TODO: 根据格式导出消息
-    console.log('Exporting messages:', format, ids)
   }
 
   /**
