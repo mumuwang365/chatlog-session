@@ -9,6 +9,7 @@ export { useChatMessagesStore } from './chatMessages'
 export { useChatSearchStore } from './chatSearch'
 export { useChatSelectionStore } from './chatSelection'
 export { useChatExportStore } from './chatExport'
+export { useSettingsStore } from './settings'
 export { useSessionStore } from './session'
 export { useContactStore } from './contact'
 export { useOnboardingStore } from './onboarding'
@@ -25,6 +26,7 @@ import { useChatMessagesStore } from './chatMessages'
 import { useChatSearchStore } from './chatSearch'
 import { useChatSelectionStore } from './chatSelection'
 import { useChatExportStore } from './chatExport'
+import { useSettingsStore } from './settings'
 import { useSessionStore } from './session'
 import { useContactStore } from './contact'
 import { useOnboardingStore } from './onboarding'
@@ -44,6 +46,7 @@ export function resetAllStores() {
   const chatSearchStore = useChatSearchStore()
   const chatSelectionStore = useChatSelectionStore()
   const chatExportStore = useChatExportStore()
+  const settingsStore = useSettingsStore()
   const sessionStore = useSessionStore()
   const contactStore = useContactStore()
   const onboardingStore = useOnboardingStore()
@@ -59,6 +62,7 @@ export function resetAllStores() {
   chatSearchStore.$reset()
   chatSelectionStore.$reset()
   chatExportStore.$reset()
+  settingsStore.$reset()
   sessionStore.$reset()
   contactStore.$reset()
   onboardingStore.$reset()

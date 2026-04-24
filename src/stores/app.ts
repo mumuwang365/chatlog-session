@@ -147,9 +147,9 @@ export const useAppStore = defineStore('app', () => {
   /**
    * 初始化应用
    */
-  function init() {
+  async function init() {
     // 从 localStorage 加载设置
-    loadSettings()
+    await loadSettings()
 
     // 检测移动端
     checkMobile()
@@ -173,7 +173,7 @@ export const useAppStore = defineStore('app', () => {
   /**
    * 加载设置
    */
-  function loadSettings() {
+  async function loadSettings() {
     try {
       const saved = localStorage.getItem('app-settings')
       if (saved) {
@@ -181,12 +181,22 @@ export const useAppStore = defineStore('app', () => {
         settings.value = { ...settings.value, ...parsed }
       }
 
-      // 从 chatlog-settings 加载 enableDebug（与 Settings 页面统一）
-      const chatlogSettings = localStorage.getItem('chatlog-settings')
-      if (chatlogSettings) {
-        const parsed = JSON.parse(chatlogSettings)
-        if (parsed.enableDebug !== undefined) {
-          config.value.enableDebug = parsed.enableDebug
+      // 从 useSettingsStore 获取 enableDebug（单一数据源）
+      // 使用动态 import 避免循环依赖，同步回退到 localStorage
+      try {
+        const { useSettingsStore } = await import('./settings') as typeof import('./settings')
+        const settingsStore = useSettingsStore()
+        if (settingsStore.api.enableDebug !== undefined) {
+          config.value.enableDebug = settingsStore.api.enableDebug
+        }
+      } catch {
+        // settingsStore 可能尚未初始化，回退到 localStorage
+        const chatlogSettings = localStorage.getItem('chatlog-settings')
+        if (chatlogSettings) {
+          const parsed = JSON.parse(chatlogSettings)
+          if (parsed.enableDebug !== undefined) {
+            config.value.enableDebug = parsed.enableDebug
+          }
         }
       }
     } catch (err) {

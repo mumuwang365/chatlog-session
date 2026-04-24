@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import ElementPlus, { ElMessage } from 'element-plus'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
@@ -24,8 +25,10 @@ const app = createApp(App)
 // 注入 UI 错误处理回调到 request 模块
 setOnErrorCallback((message: string) => ElMessage.error(message))
 
-// 注册 Pinia
-app.use(createPinia())
+// 注册 Pinia（含持久化插件）
+const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
+app.use(pinia)
 
 // 注册 Router
 app.use(router)
