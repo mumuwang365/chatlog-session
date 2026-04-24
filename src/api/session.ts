@@ -44,7 +44,7 @@ export interface SessionListResponse {
  */
 function transformSession(apiData: SessionApiResponse): Session {
   // 判断是否是群聊（userName 包含 @chatroom）
-  const isChatRoom = apiData.userName.includes('@chatroom')
+  const isChatRoom = apiData.userName.endsWith('@chatroom')
   const isOfficialAccount = apiData.userName.startsWith('gh_')
   const isHolder =
     apiData.userName.includes('@placeholder_foldgroup') ||

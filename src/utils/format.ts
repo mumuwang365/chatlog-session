@@ -3,6 +3,8 @@
  * 提供各种数据格式化方法
  */
 
+import DOMPurify from 'dompurify'
+
 /**
  * 格式化文件大小
  * 
@@ -230,10 +232,13 @@ export function highlightKeyword(
   keyword: string,
   highlightClass = 'highlight'
 ): string {
-  if (!text || !keyword) return text
+  if (!text || !keyword) return escapeHtml(text)
 
-  const regex = new RegExp(`(${escapeRegExp(keyword)})`, 'gi')
-  return text.replace(regex, `<span class="${highlightClass}">$1</span>`)
+  const escapedText = escapeHtml(text)
+  const escapedKeyword = escapeHtml(keyword)
+  const regex = new RegExp(`(${escapeRegExp(escapedKeyword)})`, 'gi')
+  const html = escapedText.replace(regex, `<span class="${highlightClass}">$1</span>`)
+  return DOMPurify.sanitize(html)
 }
 
 /**
