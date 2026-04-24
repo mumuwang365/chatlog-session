@@ -4,6 +4,35 @@
  */
 
 /**
+ * 星期常量（模块级，消除重复定义）
+ */
+const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'] as const
+
+/**
+ * 日期分类
+ */
+export type DateCategory = 'today' | 'yesterday' | 'thisWeek' | 'thisYear' | 'older'
+
+/**
+ * 获取日期分类（today/yesterday/thisWeek/thisYear/older）
+ * 统一日期判断逻辑，消除多处重复
+ */
+export function getDateCategory(date: Date): DateCategory {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today.getTime() - 86400000)
+  const weekStart = new Date(today.getTime() - today.getDay() * 86400000)
+  const yearStart = new Date(now.getFullYear(), 0, 1)
+
+  const targetTime = date.getTime()
+  if (targetTime >= today.getTime()) return 'today'
+  if (targetTime >= yesterday.getTime()) return 'yesterday'
+  if (targetTime >= weekStart.getTime()) return 'thisWeek'
+  if (targetTime >= yearStart.getTime()) return 'thisYear'
+  return 'older'
+}
+
+/**
  * 格式化时间戳为可读字符串
  * 
  * @param timestamp 时间戳（秒或毫秒）
@@ -160,7 +189,6 @@ export function formatMessageTime(timestamp: number | string): string {
   weekStart.setHours(0, 0, 0, 0)
   
   if (date >= weekStart) {
-    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     return `${weekdays[date.getDay()]} ${formatTime(date).slice(0, 5)}`
   }
 
@@ -202,7 +230,6 @@ export function formatSessionTime(timestamp: number): string {
   weekStart.setHours(0, 0, 0, 0)
   
   if (date >= weekStart) {
-    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     return weekdays[date.getDay()]
   }
 
@@ -259,7 +286,6 @@ export function formatDateGroup(timestamp: number | string): string {
   weekStart.setHours(0, 0, 0, 0)
   
   if (date >= weekStart) {
-    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     return weekdays[date.getDay()]
   }
 
@@ -508,7 +534,6 @@ export function formatMinimalDate(dateStr: string): string {
 
   // 本周 -> 周X
   if (isThisWeek(date)) {
-    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     return weekdays[date.getDay()]
   }
 
