@@ -469,10 +469,14 @@ export const useAutoRefreshStore = defineStore('autoRefresh', {
             console.log(`💾 Cache saved successfully for ${task.talker}`)
           }
 
-          // 触发缓存更新事件，通知其他组件（如 chat store）
-          window.dispatchEvent(new CustomEvent('chatlog-cache-updated', {
-            detail: { talker: task.talker, messages }
-          }))
+          // 直接调用 chat store 的缓存更新处理方法，替代 CustomEvent
+          try {
+            const { useChatStore } = await import('./chat')
+            const chatStore = useChatStore()
+            chatStore.handleCacheUpdateData(task.talker, messages)
+          } catch (e) {
+            // chat store 可能尚未初始化，静默处理
+          }
         } else {
           throw new Error('Failed to save cache')
         }

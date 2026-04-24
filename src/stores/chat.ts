@@ -1125,23 +1125,20 @@ export const useChatStore = defineStore('chat', () => {
     return refreshStore.refreshOne(talker, count, startFromTime)
   }
 
-  // 缓存更新事件处理
-  const handleCacheUpdate = (event: CustomEvent) => {
+  // 缓存更新处理（由 autoRefresh store 直接调用，替代 CustomEvent）
+  function handleCacheUpdateData(talker: string, newMessages: Message[]) {
     if (appStore.isDebug) {
-      console.log('🛎️ Chatlog cache updated event received:', event.detail)
+      console.log('🛎️ Chatlog cache updated:', { talker })
     }
-    const { talker, messages: newMessages } = event.detail
 
     // 如果是当前打开的会话，更新消息列表
     if (talker === currentTalker.value) {
-      // 找出新增的消息（基于 id 和 seq）
       const existingIds = new Set(messages.value.map(m => `${m.id}_${m.seq}`))
       const actualNewMessages = newMessages.filter(
         (m: Message) => !existingIds.has(`${m.id}_${m.seq}`)
       )
 
       if (actualNewMessages.length > 0) {
-        // 归一化后合并，确保顺序稳定
         mergeWithCurrentMessages(actualNewMessages, 'cacheUpdate')
 
         if (appStore.isDebug) {
@@ -1155,7 +1152,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * 初始化：启动缓存、自动刷新和事件监听
+   * 初始化：启动缓存和自动刷新
    * 应在组件 onMounted 中调用，而非 store 创建时自动执行
    */
   function init() {
@@ -1165,17 +1162,10 @@ export const useChatStore = defineStore('chat', () => {
     if (refreshStore.config.enabled && !refreshStore.timer) {
       refreshStore.init()
     }
-    if (typeof window !== 'undefined') {
-      window.addEventListener('chatlog-cache-updated', handleCacheUpdate as EventListener)
-    }
   }
 
-  // 清理函数：移除事件监听器
-  function cleanup() {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('chatlog-cache-updated', handleCacheUpdate as EventListener)
-    }
-  }
+  // 清理函数（不再需要移除事件监听器）
+  function cleanup() {}
 
   // ==================== Return ====================
 
@@ -1203,6 +1193,7 @@ export const useChatStore = defineStore('chat', () => {
     getCache,
     isAutoRefreshEnabled,
     triggerRefresh,
+    handleCacheUpdateData,
 
     // Getters
     currentMessages,
