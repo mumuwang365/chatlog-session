@@ -4,7 +4,7 @@ import {
   createGapMessage,
   parseTimeRangeStart,
   parseTimeRangeEnd,
-} from '@/types/message'
+} from '@/utils/message-factory'
 import { toCST, formatCSTRange, subtractDays } from '@/utils/timezone'
 import { chatlogAPI } from '@/api'
 

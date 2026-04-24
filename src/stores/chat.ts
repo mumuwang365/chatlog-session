@@ -10,7 +10,7 @@ import {
   createGapMessage,
   parseTimeRangeStart,
   parseTimeRangeEnd,
-} from '@/types/message'
+} from '@/utils/message-factory'
 import type { SearchParams } from '@/types/api'
 import { useAppStore } from './app'
 import { useMessageCacheStore } from './messageCache'
