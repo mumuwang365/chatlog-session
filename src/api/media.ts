@@ -4,11 +4,18 @@
  */
 
 import { request, getApiBaseUrl } from '@/utils/request'
+import { BaseAPI } from './base'
 
 /**
  * 多媒体 API 类
  */
-class MediaAPI {
+class MediaAPI extends BaseAPI {
+  protected resourcePath = 'media'
+
+  protected transform(data: unknown): unknown {
+    return data
+  }
+
   private get baseURL(): string {
     return getApiBaseUrl()
   }
