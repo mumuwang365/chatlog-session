@@ -122,7 +122,6 @@ export function formatRelativeTime(date: Date): string {
   const seconds = Math.floor(diff / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
-  // const days = Math.floor(hours / 24)
 
   // 刚刚（1分钟内）
   if (minutes < 1) {
@@ -135,27 +134,23 @@ export function formatRelativeTime(date: Date): string {
   }
 
   // N小时前（今天）
-  if (isSameDay(date, now)) {
+  const category = getDateCategory(date)
+  if (category === 'today') {
     if (hours < 5) {
       return `${hours}小时前`
     }
     return `今天 ${formatTime(date).slice(0, 5)}`
   }
 
-  // 昨天
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (isSameDay(date, yesterday)) {
-    return `昨天 ${formatTime(date).slice(0, 5)}`
+  switch (category) {
+    case 'yesterday':
+      return `昨天 ${formatTime(date).slice(0, 5)}`
+    case 'thisWeek':
+    case 'thisYear':
+      return `${date.getMonth() + 1}-${padZero(date.getDate())} ${formatTime(date).slice(0, 5)}`
+    case 'older':
+      return `${date.getFullYear()}-${padZero(date.getMonth() + 1)}-${padZero(date.getDate())}`
   }
-
-  // 今年内
-  if (date.getFullYear() === now.getFullYear()) {
-    return `${date.getMonth() + 1}-${padZero(date.getDate())} ${formatTime(date).slice(0, 5)}`
-  }
-
-  // 往年
-  return `${date.getFullYear()}-${padZero(date.getMonth() + 1)}-${padZero(date.getDate())}`
 }
 
 /**
@@ -165,40 +160,22 @@ export function formatRelativeTime(date: Date): string {
 export function formatMessageTime(timestamp: number | string): string {
   if (!timestamp) return ''
 
-  // 支持 ISO 8601 字符串或 Unix 时间戳
-  const date = typeof timestamp === 'string' 
-    ? new Date(timestamp) 
+  const date = typeof timestamp === 'string'
+    ? new Date(timestamp)
     : new Date(timestamp < 10000000000 ? timestamp * 1000 : timestamp)
-  const now = new Date()
 
-  // 今天：只显示时间
-  if (isSameDay(date, now)) {
-    return formatTime(date).slice(0, 5) // HH:MM
+  switch (getDateCategory(date)) {
+    case 'today':
+      return formatTime(date).slice(0, 5)
+    case 'yesterday':
+      return `昨天 ${formatTime(date).slice(0, 5)}`
+    case 'thisWeek':
+      return `${weekdays[date.getDay()]} ${formatTime(date).slice(0, 5)}`
+    case 'thisYear':
+      return `${date.getMonth() + 1}月${date.getDate()}日`
+    case 'older':
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
   }
-
-  // 昨天
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (isSameDay(date, yesterday)) {
-    return `昨天 ${formatTime(date).slice(0, 5)}`
-  }
-
-  // 本周内
-  const weekStart = new Date(now)
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-  weekStart.setHours(0, 0, 0, 0)
-  
-  if (date >= weekStart) {
-    return `${weekdays[date.getDay()]} ${formatTime(date).slice(0, 5)}`
-  }
-
-  // 今年内
-  if (date.getFullYear() === now.getFullYear()) {
-    return `${date.getMonth() + 1}月${date.getDate()}日`
-  }
-
-  // 往年
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
 }
 
 /**
@@ -210,36 +187,19 @@ export function formatSessionTime(timestamp: number): string {
 
   const ms = timestamp < 10000000000 ? timestamp * 1000 : timestamp
   const date = new Date(ms)
-  const now = new Date()
 
-  // 今天：只显示时间
-  if (isSameDay(date, now)) {
-    return formatTime(date).slice(0, 5) // HH:MM
+  switch (getDateCategory(date)) {
+    case 'today':
+      return formatTime(date).slice(0, 5)
+    case 'yesterday':
+      return '昨天'
+    case 'thisWeek':
+      return weekdays[date.getDay()]
+    case 'thisYear':
+      return `${date.getMonth() + 1}/${date.getDate()}`
+    case 'older':
+      return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`
   }
-
-  // 昨天
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (isSameDay(date, yesterday)) {
-    return '昨天'
-  }
-
-  // 本周内
-  const weekStart = new Date(now)
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-  weekStart.setHours(0, 0, 0, 0)
-  
-  if (date >= weekStart) {
-    return weekdays[date.getDay()]
-  }
-
-  // 今年内
-  if (date.getFullYear() === now.getFullYear()) {
-    return `${date.getMonth() + 1}/${date.getDate()}`
-  }
-
-  // 往年
-  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`
 }
 
 /**
@@ -249,53 +209,35 @@ export function formatSessionTime(timestamp: number): string {
 export function formatDateGroup(timestamp: number | string): string {
   if (!timestamp) return ''
 
-  // 支持 ISO 8601 字符串或 Unix 时间戳
   const date = typeof timestamp === 'string'
     ? new Date(timestamp)
     : new Date(timestamp < 10000000000 ? timestamp * 1000 : timestamp)
 
-  // 检查日期是否有效
   if (isNaN(date.getTime())) {
     return '未知日期'
   }
 
+  // 前天需要特殊处理（getDateCategory 不区分前天）
   const now = new Date()
-
-  // 今天
-  if (isSameDay(date, now)) {
-    return '今天'
-  }
-
-  // 昨天
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (isSameDay(date, yesterday)) {
-    return '昨天'
-  }
-
-  // 前天
   const dayBeforeYesterday = new Date(now)
   dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2)
-  if (isSameDay(date, dayBeforeYesterday)) {
+  dayBeforeYesterday.setHours(0, 0, 0, 0)
+  if (date.getTime() >= dayBeforeYesterday.getTime() && date.getTime() < dayBeforeYesterday.getTime() + 86400000) {
     return '前天'
   }
 
-  // 本周内
-  const weekStart = new Date(now)
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-  weekStart.setHours(0, 0, 0, 0)
-  
-  if (date >= weekStart) {
-    return weekdays[date.getDay()]
+  switch (getDateCategory(date)) {
+    case 'today':
+      return '今天'
+    case 'yesterday':
+      return '昨天'
+    case 'thisWeek':
+      return weekdays[date.getDay()]
+    case 'thisYear':
+      return `${date.getMonth() + 1}月${date.getDate()}日`
+    case 'older':
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
   }
-
-  // 今年内
-  if (date.getFullYear() === now.getFullYear()) {
-    return `${date.getMonth() + 1}月${date.getDate()}日`
-  }
-
-  // 往年
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
 }
 
 /**
