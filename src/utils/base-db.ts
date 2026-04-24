@@ -18,9 +18,65 @@ export interface DBConfig {
   name: string
   version: number
   stores: DBStoreConfig[]
-}
+  }
 
-/**
+  /**
+   * 通用游标分页方法
+   * @param storeName 对象存储名
+   * @param offset 偏移量
+   * @param limit 每页大小
+   * @returns 分页结果
+   */
+  protected async getPaginated<T = any>(
+    storeName: string,
+    offset: number = 0,
+    limit: number = 100
+  ): Promise<{ items: T[]; total: number; hasMore: boolean }> {
+    const db = await this.getDB()
+
+    return new Promise((resolve, reject) => {
+      const result: T[] = []
+      const transaction = db.transaction([storeName], 'readonly')
+      const store = transaction.objectStore(storeName)
+
+      let completed = 0
+      const total = offset + limit
+
+      const request = store.openCursor()
+
+      request.onsuccess = () => {
+        const cursor = request.result
+        if (cursor) {
+          if (completed >= offset && completed < total) {
+            result.push(cursor.value)
+          }
+          completed++
+          if (completed < total) {
+            cursor.continue()
+          } else {
+            resolve({
+              items: result,
+              total: completed,
+              hasMore: true,
+            })
+          }
+        } else {
+          resolve({
+            items: result,
+            total: completed,
+            hasMore: false,
+          })
+        }
+      }
+
+      request.onerror = () => {
+        console.error(`❌ 分页查询失败 [${storeName}]:`, request.error)
+        reject(request.error)
+      }
+    })
+  }
+
+  /**
  * IndexedDB 基础操作类
  */
 export abstract class BaseDatabase {
