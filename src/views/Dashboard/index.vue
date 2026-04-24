@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { request } from '@/utils/request'
 import { useContactStore } from '@/stores/contact'
 import { formatFileSize, formatNumber } from '@/utils/format'
 import { formatDate } from '@/utils/date'
 import Avatar from '@/components/common/Avatar.vue'
 import { mediaAPI } from '@/api/media'
+import { dashboardAPI } from '@/api/dashboard'
 import type { DashboardData } from '@/api/dashboard'
 
 const contactStore = useContactStore()
@@ -15,8 +15,7 @@ const dashboardData = ref<DashboardData | null>(null)
 const fetchDashboardData = async () => {
   loading.value = true
   try {
-    const res = await request.get<DashboardData>('/api/v1/dashboard')
-    dashboardData.value = res
+    dashboardData.value = await dashboardAPI.getData()
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error)
   } finally {
