@@ -1,4 +1,5 @@
 import { request } from '@/utils/request'
+import { BaseAPI } from './base'
 
 export interface DashboardData {
   overview: {
@@ -90,6 +91,26 @@ export interface DashboardData {
   }
 }
 
-export const getDashboardData = () => {
-  return request.get<DashboardData>('/api/v1/dashboard')
+/**
+ * Dashboard API 类
+ */
+class DashboardAPI extends BaseAPI<DashboardData, DashboardData> {
+  protected resourcePath = 'dashboard'
+
+  protected transform(data: DashboardData): DashboardData {
+    return data
+  }
+
+  /**
+   * 获取 Dashboard 数据
+   */
+  async getData(): Promise<DashboardData> {
+    return request.get<DashboardData>(this.resourceUrl)
+  }
 }
+
+export const dashboardAPI = new DashboardAPI()
+export default dashboardAPI
+
+// 向后兼容
+export const getDashboardData = () => dashboardAPI.getData()
