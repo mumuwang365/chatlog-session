@@ -4,6 +4,7 @@
  */
 
 import { request } from '@/utils/request'
+import { BaseAPI } from './base'
 import type { Contact } from '@/types/contact'
 import { ContactType } from '@/types/contact'
 import type { ContactParams } from '@/types/api'
@@ -82,7 +83,11 @@ function transformContact(backendContact: BackendContact): Contact {
 /**
  * 联系人 API 类
  */
-class ContactAPI {
+class ContactAPI extends BaseAPI<BackendContact, Contact> {
+  protected resourcePath = 'contact'
+
+  protected transform = transformContact
+
   /**
    * 获取联系人列表
    * GET /api/v1/contact
@@ -91,19 +96,9 @@ class ContactAPI {
    * @returns 联系人列表
    */
   async getContacts(params?: ContactParams): Promise<Contact[]> {
-    const response = await request.get<BackendContactResponse>('/api/v1/contact', params)
-
-    // 如果后端返回的是 { items: [...] } 格式
-    if (response && typeof response === 'object' && 'items' in response) {
-      return response.items.map(transformContact)
-    }
-
-    // 如果后端直接返回数组（兼容处理）
-    if (Array.isArray(response)) {
-      return (response as any[]).map(transformContact)
-    }
-
-    return []
+    const response = await request.get<unknown>(this.resourceUrl, params)
+    const items = this.normalizeItems(response)
+    return this.transformAll(items)
   }
 
   /**
