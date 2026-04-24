@@ -240,10 +240,10 @@ onMounted(() => {
               size="small"
               @change="handleFilterChange"
             >
-              <el-radio-button label="friend"> 好友 ({{ stats.friends }}) </el-radio-button>
-              <el-radio-button label="chatroom"> 群聊 ({{ stats.chatrooms }}) </el-radio-button>
-              <el-radio-button label="official"> 公众号 ({{ stats.official }}) </el-radio-button>
-              <el-radio-button label="all"> 全部 ({{ stats.total }}) </el-radio-button>
+              <el-radio-button value="friend"> 好友 ({{ stats.friends }}) </el-radio-button>
+              <el-radio-button value="chatroom"> 群聊 ({{ stats.chatrooms }}) </el-radio-button>
+              <el-radio-button value="official"> 公众号 ({{ stats.official }}) </el-radio-button>
+              <el-radio-button value="all"> 全部 ({{ stats.total }}) </el-radio-button>
             </el-radio-group>
 
             <el-button-group size="small" class="sort-buttons">

@@ -400,10 +400,10 @@ watch(
         <div class="config-section">
           <label class="section-label">导出格式</label>
           <el-radio-group v-model="exportFormat" class="format-group">
-            <el-radio-button label="json">JSON</el-radio-button>
-            <el-radio-button label="csv">CSV</el-radio-button>
-            <el-radio-button label="txt">TXT</el-radio-button>
-            <el-radio-button label="markdown">Markdown</el-radio-button>
+            <el-radio-button value="json">JSON</el-radio-button>
+            <el-radio-button value="csv">CSV</el-radio-button>
+            <el-radio-button value="txt">TXT</el-radio-button>
+            <el-radio-button value="markdown">Markdown</el-radio-button>
           </el-radio-group>
           <p class="format-desc">
             <template v-if="exportFormat === 'json'"
@@ -457,9 +457,9 @@ watch(
         <div class="config-section">
           <label class="section-label">消息类型</label>
           <el-radio-group v-model="messageTypeFilter">
-            <el-radio label="all">全部类型</el-radio>
-            <el-radio label="text">仅文本消息</el-radio>
-            <el-radio label="withMedia">包含媒体引用</el-radio>
+            <el-radio value="all">全部类型</el-radio>
+            <el-radio value="text">仅文本消息</el-radio>
+            <el-radio value="withMedia">包含媒体引用</el-radio>
           </el-radio-group>
         </div>
       </div>

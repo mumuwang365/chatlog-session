@@ -59,7 +59,7 @@ const handleThemeChange = (val: string | number | boolean | undefined) => {
     <el-form label-position="left" label-width="120px">
       <el-form-item label="主题模式">
         <el-radio-group :model-value="modelValue.theme" @update:model-value="handleThemeChange">
-          <el-radio-button v-for="option in themeOptions" :key="option.value" :label="option.value">
+          <el-radio-button v-for="option in themeOptions" :key="option.value" :value="option.value">
             <el-icon><component :is="option.icon" /></el-icon>
             {{ option.label }}
           </el-radio-button>

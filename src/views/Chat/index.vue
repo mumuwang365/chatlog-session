@@ -253,11 +253,11 @@ onUnmounted(() => {
           <!-- 筛选按钮 -->
           <div class="session-filter">
             <el-radio-group v-model="filterType" size="small">
-              <el-radio-button label="chat">聊天</el-radio-button>
-              <el-radio-button label="private">私聊</el-radio-button>
-              <el-radio-button label="group">群聊</el-radio-button>
-              <el-radio-button label="official">公众号</el-radio-button>
-              <el-radio-button label="all">全部</el-radio-button>
+              <el-radio-button value="chat">聊天</el-radio-button>
+              <el-radio-button value="private">私聊</el-radio-button>
+              <el-radio-button value="group">群聊</el-radio-button>
+              <el-radio-button value="official">公众号</el-radio-button>
+              <el-radio-button value="all">全部</el-radio-button>
             </el-radio-group>
           </div>
         </div>
