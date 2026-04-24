@@ -3,6 +3,8 @@
  * 用于诊断和调试缓存、自动刷新功能
  */
 
+import { formatFileSize as formatBytes } from './format'
+
 import { useMessageCacheStore } from '@/stores/messageCache'
 import { useAutoRefreshStore, RefreshStatus } from '@/stores/autoRefresh'
 import type { Message } from '@/types/message'
@@ -152,17 +154,6 @@ export function printDebugInfo(): void {
   console.groupEnd()
   
   console.groupEnd()
-}
-
-/**
- * 格式化字节数
- */
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
 
 /**

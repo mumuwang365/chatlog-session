@@ -144,17 +144,4 @@ export async function downloadFromUrl(url: string, filename: string): Promise<vo
   }
 }
 
-/**
- * 格式化文件大小
- * @param bytes 字节数
- * @returns 格式化后的字符串（如 "1.5 MB"）
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B'
 
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  const k = 1024
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + units[i]
-}
