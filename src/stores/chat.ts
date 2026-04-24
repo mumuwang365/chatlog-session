@@ -69,9 +69,9 @@ export const useChatStore = defineStore('chat', () => {
   const currentPage = ref(1)
 
   /**
-   * 每页大小
+   * 每页大小（直接使用 appStore.config.pageSize，避免不同步）
    */
-  const pageSize = ref(appStore.config.pageSize)
+  const pageSize = computed(() => appStore.config.pageSize)
 
   /**
    * 是否还有更多消息
