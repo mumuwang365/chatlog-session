@@ -1113,6 +1113,27 @@ export const useChatStore = defineStore('chat', () => {
     historyLoadMessage.value = ''
   }
 
+  // 封装方法：替代直接暴露 cacheStore/refreshStore
+  function getCacheMetadata() {
+    return cacheStore.metadata
+  }
+
+  function removeCache(talker: string) {
+    cacheStore.remove(talker)
+  }
+
+  function getCache(talker: string) {
+    return cacheStore.get(talker)
+  }
+
+  function isAutoRefreshEnabled() {
+    return refreshStore.config.enabled
+  }
+
+  function triggerRefresh(talker: string, count: number, startFromTime?: string) {
+    return refreshStore.refreshOne(talker, count, startFromTime)
+  }
+
   // 缓存更新事件处理
   const handleCacheUpdate = (event: CustomEvent) => {
     if (appStore.isDebug) {
@@ -1185,9 +1206,12 @@ export const useChatStore = defineStore('chat', () => {
     loadingHistory,
     historyLoadMessage,
 
-    // Cache & Refresh stores
-    cacheStore,
-    refreshStore,
+    // Cache & Refresh 封装方法
+    getCacheMetadata,
+    removeCache,
+    getCache,
+    isAutoRefreshEnabled,
+    triggerRefresh,
 
     // Getters
     currentMessages,
