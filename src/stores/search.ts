@@ -221,7 +221,7 @@ export const useSearchStore = defineStore('search', () => {
       const contacts = await contactAPI.searchContacts(searchKeyword)
       
       // 过滤掉群聊（群聊在 searchChatrooms 中处理）
-      contactResults.value = contacts.filter(contact => !contact.wxid.includes('@chatroom'))
+      contactResults.value = contacts.filter(contact => !contact.wxid.endsWith('@chatroom'))
 
       if (appStore.isDebug) {
         console.log('🔍 Contact search completed', {
