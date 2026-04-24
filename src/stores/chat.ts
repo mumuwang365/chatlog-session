@@ -43,47 +43,8 @@ export const useChatStore = defineStore('chat', () => {
   const cacheStore = useMessageCacheStore()
   const refreshStore = useAutoRefreshStore()
 
-  // 初始化缓存和自动刷新
-  if (!cacheStore.metadata.length) {
-    cacheStore.init()
-  }
-  if (refreshStore.config.enabled && !refreshStore.timer) {
-    refreshStore.init()
-  }
-
-  // 监听缓存更新事件
-  const handleCacheUpdate = (event: CustomEvent) => {
-    if (appStore.isDebug) {
-      console.log('🛎️ Chatlog cache updated event received:', event.detail)
-    }
-    const { talker, messages: newMessages } = event.detail
-
-    // 如果是当前打开的会话，更新消息列表
-    if (talker === currentTalker.value) {
-      // 找出新增的消息（基于 id 和 seq）
-      const existingIds = new Set(messages.value.map(m => `${m.id}_${m.seq}`))
-      const actualNewMessages = newMessages.filter(
-        (m: Message) => !existingIds.has(`${m.id}_${m.seq}`)
-      )
-
-      if (actualNewMessages.length > 0) {
-        // 归一化后合并，确保顺序稳定
-        mergeWithCurrentMessages(actualNewMessages, 'cacheUpdate')
-
-        if (appStore.isDebug) {
-          console.log(`🔄 Auto-updated messages for current session: ${talker}`, {
-            existingCount: messages.value.length - actualNewMessages.length,
-            newMessagesCount: actualNewMessages.length,
-          })
-        }
-      }
-    }
-  }
-
-  // 添加事件监听器
-  if (typeof window !== 'undefined') {
-    window.addEventListener('chatlog-cache-updated', handleCacheUpdate as EventListener)
-  }
+  // 初始化缓存和自动刷新（移到 init() action 中，避免 store 创建时的副作用）
+  // 监听缓存更新事件（移到 init() action 中）
 
   // ==================== State ====================
 
@@ -1152,6 +1113,51 @@ export const useChatStore = defineStore('chat', () => {
     historyLoadMessage.value = ''
   }
 
+  // 缓存更新事件处理
+  const handleCacheUpdate = (event: CustomEvent) => {
+    if (appStore.isDebug) {
+      console.log('🛎️ Chatlog cache updated event received:', event.detail)
+    }
+    const { talker, messages: newMessages } = event.detail
+
+    // 如果是当前打开的会话，更新消息列表
+    if (talker === currentTalker.value) {
+      // 找出新增的消息（基于 id 和 seq）
+      const existingIds = new Set(messages.value.map(m => `${m.id}_${m.seq}`))
+      const actualNewMessages = newMessages.filter(
+        (m: Message) => !existingIds.has(`${m.id}_${m.seq}`)
+      )
+
+      if (actualNewMessages.length > 0) {
+        // 归一化后合并，确保顺序稳定
+        mergeWithCurrentMessages(actualNewMessages, 'cacheUpdate')
+
+        if (appStore.isDebug) {
+          console.log(`🔄 Auto-updated messages for current session: ${talker}`, {
+            existingCount: messages.value.length - actualNewMessages.length,
+            newMessagesCount: actualNewMessages.length,
+          })
+        }
+      }
+    }
+  }
+
+  /**
+   * 初始化：启动缓存、自动刷新和事件监听
+   * 应在组件 onMounted 中调用，而非 store 创建时自动执行
+   */
+  function init() {
+    if (!cacheStore.metadata.length) {
+      cacheStore.init()
+    }
+    if (refreshStore.config.enabled && !refreshStore.timer) {
+      refreshStore.init()
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('chatlog-cache-updated', handleCacheUpdate as EventListener)
+    }
+  }
+
   // 清理函数：移除事件监听器
   function cleanup() {
     if (typeof window !== 'undefined') {
@@ -1195,6 +1201,7 @@ export const useChatStore = defineStore('chat', () => {
     fileMessages,
 
     // Actions
+    init,
     loadMessages,
     loadMoreMessages,
     loadHistoryMessages,
