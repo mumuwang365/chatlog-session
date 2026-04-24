@@ -4,8 +4,30 @@
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
-import { ElMessage } from 'element-plus'
 import type { ApiResponse, ApiError } from '@/types/api'
+
+/**
+ * UI 错误处理回调（由应用层注入，解耦 request.ts 对 element-plus 的依赖）
+ */
+let onErrorCallback: ((message: string) => void) | null = null
+
+/**
+ * 注入 UI 错误处理回调
+ */
+export function setOnErrorCallback(callback: (message: string) => void): void {
+  onErrorCallback = callback
+}
+
+/**
+ * 显示错误消息（通过注入的回调或 console.error）
+ */
+function showError(message: string): void {
+  if (onErrorCallback) {
+    onErrorCallback(message)
+  } else {
+    console.error('[Request Error]', message)
+  }
+}
 
 /**
  * 扩展 axios 配置类型，支持重试
@@ -197,7 +219,7 @@ service.interceptors.response.use(
       }
       // 业务错误
       const errorMessage = data.message || '请求失败'
-      ElMessage.error(errorMessage)
+      showError(errorMessage)
       return Promise.reject(new Error(errorMessage))
     }
 
@@ -257,37 +279,37 @@ service.interceptors.response.use(
 
       switch (status) {
         case 400:
-          ElMessage.error(data?.message || '请求参数错误')
+          showError(data?.message || '请求参数错误')
           break
         case 401:
-          ElMessage.error('未授权，请登录')
+          showError('未授权，请登录')
           // 跳转到登录页面
           // router.push('/login')
           break
         case 403:
-          ElMessage.error('拒绝访问')
+          showError('拒绝访问')
           break
         case 404:
-          ElMessage.error('请求的资源不存在')
+          showError('请求的资源不存在')
           break
         case 408:
-          ElMessage.error('请求超时')
+          showError('请求超时')
           break
         case 500:
-          ElMessage.error('服务器内部错误')
+          showError('服务器内部错误')
           break
         case 503:
-          ElMessage.error('服务不可用')
+          showError('服务不可用')
           break
         default:
-          ElMessage.error(data?.message || `请求失败 (${status})`)
+          showError(data?.message || `请求失败 (${status})`)
       }
     } else if (error.request) {
       // 请求已发送但没有收到响应
-      ElMessage.error('网络错误，请检查网络连接')
+      showError('网络错误，请检查网络连接')
     } else {
       // 请求配置出错
-      ElMessage.error(error.message || '请求配置错误')
+      showError(error.message || '请求配置错误')
     }
 
     return Promise.reject(error)

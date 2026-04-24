@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
+import ElementPlus, { ElMessage } from 'element-plus'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
@@ -10,6 +10,7 @@ import App from './App.vue'
 import router from './router'
 import './assets/styles/index.scss'
 import { db } from './utils/db'
+import { setOnErrorCallback } from './utils/request'
 
 // 开发环境：导入缓存调试工具
 if (import.meta.env.DEV) {
@@ -19,6 +20,9 @@ if (import.meta.env.DEV) {
 }
 
 const app = createApp(App)
+
+// 注入 UI 错误处理回调到 request 模块
+setOnErrorCallback((message: string) => ElMessage.error(message))
 
 // 注册 Pinia
 app.use(createPinia())
