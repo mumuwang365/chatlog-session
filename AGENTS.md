@@ -21,13 +21,12 @@ pnpm lint         # ESLint 检查并自动修复
 pnpm format       # Prettier 格式化 src/
 ```
 
-## Package Manager
+## Package Manager & Node Version
 
-- 项目统一使用 `pnpm`
+- **包管理器**: 项目统一使用 `pnpm@10.33.0`（见 `package.json` 的 `packageManager` 字段）
+- **Node.js**: 需要 **Node.js 20+**（Vite 7 要求）
 - 初次进入仓库建议先执行 `corepack enable`
-- 如需紧急回滚到 npm，需同时恢复 `package-lock.json`、CI 中的 `npm ci` 配置，以及文档中的 npm 命令说明
-
-本项目无测试框架，无单元测试。
+- **禁止**提交 `package-lock.json`，CI 有 guard 检查会失败
 
 ## Code Style (Prettier)
 
@@ -44,14 +43,14 @@ pnpm format       # Prettier 格式化 src/
 
 ```typescript
 // Vue/Router/Pinia API 自动导入，不要手动 import:
-//   ref, reactive, computed, watch, watchEffect, onMounted, onUnmounted,
-//   useRoute, useRouter, defineStore, storeToRefs, nextTick, etc.
+// ref, reactive, computed, watch, watchEffect, onMounted, onUnmounted,
+// useRoute, useRouter, defineStore, storeToRefs, nextTick, etc.
 
 // 需要手动导入:
-import type { Contact } from '@/types/contact' // 类型用 import type
-import { useAppStore } from '@/stores/app' // Store
-import { request } from '@/utils/request' // 工具函数
-import { ElMessage } from 'element-plus' // Element Plus 消息 (非组件)
+import type { Contact } from '@/types/contact'  // 类型用 import type
+import { useAppStore } from '@/stores/app'      // Store
+import { request } from '@/utils/request'       // 工具函数
+import { ElMessage } from 'element-plus'        // Element Plus 消息 (非组件)
 
 // 路径别名: @/ → src/
 // Element Plus 组件和图标已通过 unplugin 自动导入，无需手动 import
@@ -78,15 +77,15 @@ import { ElMessage } from 'element-plus' // Element Plus 消息 (非组件)
 
 ## Naming Conventions
 
-| 类别        | 规则                     | 示例                                  |
-| ----------- | ------------------------ | ------------------------------------- |
-| Components  | PascalCase 文件名        | `EmptyState.vue`                      |
-| Composables | `useXxx.ts`              | `useKeyboardShortcuts.ts`             |
-| Stores      | 描述性名称               | `stores/app.ts`, `stores/contact.ts`  |
-| Types       | PascalCase interface     | `Contact`, `SessionInfo`, `AppConfig` |
-| Utils       | camelCase 文件，命名导出 | `utils/format.ts`, `utils/date.ts`    |
-| API files   | 领域名称                 | `api/contact.ts`, `api/session.ts`    |
-| 常量        | UPPER_SNAKE_CASE         | `API_BASE_PATH`, `ContactType`        |
+| 类别 | 规则 | 示例 |
+| --- | --- | --- |
+| Components | PascalCase 文件名 | `EmptyState.vue` |
+| Composables | `useXxx.ts` | `useKeyboardShortcuts.ts` |
+| Stores | 描述性名称 | `stores/app.ts`, `stores/contact.ts` |
+| Types | PascalCase interface | `Contact`, `SessionInfo`, `AppConfig` |
+| Utils | camelCase 文件，命名导出 | `utils/format.ts`, `utils/date.ts` |
+| API files | 领域名称 | `api/contact.ts`, `api/session.ts` |
+| 常量 | UPPER_SNAKE_CASE | `API_BASE_PATH`, `ContactType` |
 
 ## State Management (Pinia)
 
@@ -162,44 +161,44 @@ export default xxxAPI
 - HTTP 错误由 `utils/request.ts` 拦截器统一处理 (含自动重试)
 - 调试日志门控: `if (appStore.isDebug) { console.log(...) }`
 
-## Comments
-
-- 业务逻辑注释使用中文
-- 导出函数使用 JSDoc (中文描述)
-- 代码段落使用分隔线: `// ==================== Section ====================`
-
 ## Project Structure
 
 ```
 src/
-├── api/           # API 层 - class 单例 + transform 函数
-├── assets/styles/ # SCSS 全局变量、mixins、基础样式
-├── components/    # 按功能分组: chat/, common/, layout/, search/, PWA/
-├── composables/   # 可复用组合函数 (useXxx.ts)
-├── router/        # Vue Router - createWebHistory, 懒加载路由
-├── stores/        # Pinia stores (Composition API 为主)
-├── types/         # TypeScript 类型定义，按领域拆分
-├── utils/         # 工具函数: request, db, format, date, storage 等
-└── views/         # 页面组件: Chat/, Contact/, Search/, Settings/, Dashboard/
+├── api/              # API 层 - class 单例 + transform 函数
+├── assets/styles/    # SCSS 全局变量、mixins、基础样式
+├── components/       # 按功能分组: chat/, common/, layout/, search/, PWA/
+├── composables/      # 可复用组合函数 (useXxx.ts)
+├── router/           # Vue Router - createWebHistory, 懒加载路由
+├── stores/           # Pinia stores (Composition API 为主)
+├── types/            # TypeScript 类型定义，按领域拆分
+├── utils/            # 工具函数: request, db, format, date, storage 等
+└── views/            # 页面组件: Chat/, Contact/, Search/, Settings/, Dashboard/
 ```
 
-## Key Dependencies
+## OpenSpec Workflow
 
-- Vue 3.4+, TypeScript ~5.3, Vite 7.x
-- Pinia 3.x (状态管理), Element Plus 2.x (UI), Vue Router 4.x
-- axios (HTTP), dayjs (日期), pinyin-pro (拼音), dompurify (XSS 防护)
-- vue-virtual-scroller (虚拟滚动), @vueuse/core (实用 composables)
-- marked (Markdown 渲染), idb/IndexedDB (本地持久化)
+项目使用 OpenSpec 管理变更提案和规格：
+
+- `openspec/changes/<change-id>/` - 活跃变更目录
+- `openspec/changes/archive/` - 已归档变更
+- `openspec/specs/` - 主规格目录
+
+每个变更包含：
+- `proposal.md` - 变更提案
+- `design.md` - 设计说明
+- `tasks.md` - 任务清单
+- `specs/<capability>/spec.md` - 规格 delta
 
 ## Environment Variables (.env)
 
-| 变量                | 说明          | 默认值                |
-| ------------------- | ------------- | --------------------- |
-| `VITE_APP_TITLE`    | 应用标题      | Chatlog Session       |
+| 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `VITE_APP_TITLE` | 应用标题 | Chatlog Session |
 | `VITE_API_BASE_URL` | 后端 API 地址 | http://127.0.0.1:5030 |
-| `VITE_PAGE_SIZE`    | 默认分页大小  | 500                   |
-| `VITE_ENABLE_DEBUG` | 启用调试模式  | false                 |
-| `VITE_BASE_PATH`    | 部署基础路径  | ./                    |
+| `VITE_PAGE_SIZE` | 默认分页大小 | 500 |
+| `VITE_ENABLE_DEBUG` | 启用调试模式 | false |
+| `VITE_BASE_PATH` | 部署基础路径 | ./ |
 
 ## Caching Architecture
 
@@ -213,3 +212,11 @@ src/
 - `src/auto-imports.d.ts` - unplugin-auto-import 生成
 - `src/components.d.ts` - unplugin-vue-components 生成
 - `.eslintrc-auto-import.json` - auto-import ESLint globals
+
+## Common Gotchas
+
+1. **不要手动导入 Vue API** - `ref`, `computed`, `watch` 等已自动导入
+2. **Node 版本不对会导致构建失败** - 确保 Node.js 20+
+3. **不要提交 package-lock.json** - 项目使用 pnpm，CI 会拒绝 npm 锁文件
+4. **全局 SCSS 变量已自动注入** - 不需要手动 `@use` variables.scss
+5. **Element Plus 组件已自动导入** - 不需要手动 import
