@@ -670,16 +670,6 @@ defineExpose({
   animation: highlight 0.5s ease-in-out;
 }
 
-@keyframes highlight {
-  0%,
-  100% {
-    background-color: transparent;
-  }
-  50% {
-    background-color: var(--el-color-primary-light-9);
-  }
-}
-
 // 淡入淡出动画
 .fade-enter-active,
 .fade-leave-active {

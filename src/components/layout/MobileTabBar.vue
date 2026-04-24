@@ -198,16 +198,6 @@ const isActive = (key: string) => {
   opacity: 0;
 }
 
-// 旋转动画
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 // 暗色模式
 .dark {
   .mobile-tabbar {

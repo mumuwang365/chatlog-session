@@ -94,13 +94,4 @@ const iconSize = computed(() => sizeMap[props.size])
     }
   }
 }
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

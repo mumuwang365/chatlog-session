@@ -791,13 +791,4 @@ onMounted(() => {
 .fade-leave-to {
   opacity: 0;
 }
-
-@keyframes rotating {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

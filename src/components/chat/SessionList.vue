@@ -572,15 +572,6 @@ defineExpose({
   margin-left: 8px;
 }
 
-@keyframes rotating {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .dark-mode {
   .session-list__content {
     &::-webkit-scrollbar-thumb {

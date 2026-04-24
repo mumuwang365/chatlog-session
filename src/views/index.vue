@@ -314,16 +314,6 @@ const CurrentViewComponent = computed(() => {
   }
 }
 
-// 旋转动画
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 // 淡入淡出动画
 .fade-enter-active,
 .fade-leave-active {
