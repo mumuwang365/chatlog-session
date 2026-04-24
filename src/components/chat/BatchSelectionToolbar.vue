@@ -47,7 +47,7 @@ const handleExit = () => {
 // 全选
 const handleSelectAll = () => {
   if (isAllSelected.value) {
-    batchStore.clear()
+    batchStore.clearSelection()
   } else {
     batchStore.selectAll(props.allMessages)
   }

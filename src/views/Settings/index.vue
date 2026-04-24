@@ -87,7 +87,9 @@ onMounted(async () => {
 
 // 处理主题变化
 const handleThemeChange = (theme: string) => {
-  appStore.updateSettings({ theme: theme as 'light' | 'dark' | 'auto' })
+  settingsStore.appearance.theme = theme as 'light' | 'dark' | 'auto'
+  appStore.setupThemeListener()
+  appStore.applyTheme()
   ElMessage.success('主题已切换')
 }
 
@@ -231,12 +233,6 @@ const saveSettings = () => {
 
   // 保存 apiBaseUrl 到独立的 key（兼容 request.ts 等读取）
   localStorage.setItem('apiBaseUrl', settingsStore.api.apiBaseUrl)
-
-  // 同步用户设置到 appStore
-  appStore.updateSettings({
-    showMediaResources: settingsStore.chat.showMediaResources,
-    disableServerPinning: !settingsStore.chat.enableServerPinning,
-  })
 
   // 同步通知设置到 notificationStore
   syncNotificationSettings()

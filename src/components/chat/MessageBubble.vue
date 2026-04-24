@@ -5,6 +5,7 @@ import { formatMessageTime } from '@/utils'
 import Avatar from '@/components/common/Avatar.vue'
 import { useAppStore } from '@/stores/app'
 import { useChatMessagesStore } from '@/stores/chatMessages'
+import { useSettingsStore } from '@/stores/settings'
 import { mediaAPI } from '@/api/media'
 import { useMessageUrl } from './composables/useMessageUrl'
 import { useMessageType } from './composables/useMessageType'
@@ -31,12 +32,13 @@ const emit = defineEmits<{
   'gap-click': [message: Message]
 }>()
 
-// 获取 app store
+// 获取 stores
 const appStore = useAppStore()
+const settingsStore = useSettingsStore()
 const chatStore = useChatMessagesStore()
 
 // 是否显示媒体资源
-const showMediaResources = computed(() => appStore.settings.showMediaResources)
+const showMediaResources = computed(() => settingsStore.chat.showMediaResources)
 
 // 使用消息类型判断
 const messageTypeInfo = useMessageType(props.message)

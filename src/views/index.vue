@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, defineAsyncComponent } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { useSettingsStore } from '@/stores/settings'
 import { useContactStore } from '@/stores/contact'
 import ChatView from './Chat/index.vue'
 import ContactView from './Contact/index.vue'
@@ -12,6 +13,7 @@ const DashboardView = defineAsyncComponent(() => import('./Dashboard/index.vue')
 
 
 const appStore = useAppStore()
+const settingsStore = useSettingsStore()
 const contactStore = useContactStore()
 
 // 联系人后台加载状态
@@ -49,7 +51,7 @@ const isActive = (view: ViewType) => {
 
 // 主题切换提示文本
 const themeTooltipText = computed(() => {
-  const currentTheme = appStore.settings.theme
+  const currentTheme = settingsStore.appearance.theme
   if (currentTheme === 'light') {
     return '切换到暗色'
   } else if (currentTheme === 'dark') {
@@ -61,7 +63,7 @@ const themeTooltipText = computed(() => {
 
 // 主题图标
 const themeIcon = computed(() => {
-  const currentTheme = appStore.settings.theme
+  const currentTheme = settingsStore.appearance.theme
   if (currentTheme === 'auto') {
     return 'Monitor'
   }

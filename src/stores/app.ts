@@ -3,7 +3,8 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { UserSettings, AppConfig } from '@/types'
+import type { AppConfig } from '@/types'
+import { useSettingsStore } from './settings'
 
 // 系统主题监听器引用
 let systemThemeMediaQuery: MediaQueryList | null = null
@@ -21,7 +22,22 @@ export interface NavigationStackItem {
   }
 }
 
+/**
+ * app.ts 独有的用户设置（非重叠字段）
+ * 重叠字段（theme, language, showMediaResources, enableServerPinning）由 useSettingsStore 管理
+ */
+export interface AppOnlySettings {
+  fontSize: string
+  messageDensity: string
+  enterToSend: boolean
+  autoPlayVoice: boolean
+  showMessagePreview: boolean
+  timeFormat: string
+}
+
 export const useAppStore = defineStore('app', () => {
+  const settingsStore = useSettingsStore()
+
   // ==================== State ====================
 
   /**
@@ -39,19 +55,16 @@ export const useAppStore = defineStore('app', () => {
   })
 
   /**
-   * 用户设置
+   * app 独有的用户设置（非重叠字段）
+   * 重叠字段通过 settingsStore 读取
    */
-  const settings = ref<UserSettings>({
-    theme: 'light',
-    language: 'zh-CN',
+  const settings = ref<AppOnlySettings>({
     fontSize: 'medium',
     messageDensity: 'comfortable',
     enterToSend: true,
     autoPlayVoice: false,
     showMessagePreview: true,
     timeFormat: '24h',
-    showMediaResources: true,
-    disableServerPinning: false,
   })
 
   /**
@@ -66,63 +79,31 @@ export const useAppStore = defineStore('app', () => {
     history: false,
   })
 
-  /**
-   * 侧边栏展开状态
-   */
   const sidebarCollapsed = ref(false)
-
-  /**
-   * 移动端状态
-   */
   const isMobile = ref(false)
-
-  /**
-   * 当前激活的导航项
-   */
   const activeNav = ref('chat')
 
-  /**
-   * 页面导航栈（移动端使用）
-   */
   const navigationStack = ref<NavigationStackItem[]>([
     { view: 'sessionList' }
   ])
 
-  /**
-   * 是否显示消息列表（移动端控制）
-   */
   const showMessageList = ref(false)
-
-  /**
-   * 是否显示联系人详情（移动端控制）
-   */
   const showContactDetail = ref(false)
-
-  /**
-   * 当前会话ID（移动端导航用）
-   */
   const currentMobileSessionId = ref<string | undefined>(undefined)
-
-  /**
-   * 当前联系人ID（移动端导航用）
-   */
   const currentMobileContactId = ref<string | undefined>(undefined)
-
-  /**
-   * 全局错误信息
-   */
   const error = ref<Error | null>(null)
 
   // ==================== Getters ====================
 
   /**
-   * 是否为暗色主题
+   * 是否为暗色主题（从 settingsStore 读取）
    */
   const isDark = computed(() => {
-    if (settings.value.theme === 'auto') {
+    const theme = settingsStore.appearance.theme
+    if (theme === 'auto') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches
     }
-    return settings.value.theme === 'dark'
+    return theme === 'dark'
   })
 
   /**
@@ -130,34 +111,20 @@ export const useAppStore = defineStore('app', () => {
    */
   const isDebug = computed(() => config.value.enableDebug)
 
-  /**
-   * 是否有错误
-   */
   const hasError = computed(() => error.value !== null)
 
-  /**
-   * 是否正在加载
-   */
   const isLoading = computed(() => {
     return Object.values(loading.value).some(v => v)
   })
 
   // ==================== Actions ====================
 
-  /**
-   * 初始化应用
-   */
   async function init() {
-    // 从 localStorage 加载设置
     await loadSettings()
 
-    // 检测移动端
     checkMobile()
-
-    // 监听窗口大小变化
     window.addEventListener('resize', checkMobile)
 
-    // 设置主题监听器并应用主题
     setupThemeListener()
     applyTheme()
 
@@ -170,43 +137,24 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  /**
-   * 加载设置
-   */
   async function loadSettings() {
     try {
+      // 加载 app 独有设置
       const saved = localStorage.getItem('app-settings')
       if (saved) {
         const parsed = JSON.parse(saved)
         settings.value = { ...settings.value, ...parsed }
       }
 
-      // 从 useSettingsStore 获取 enableDebug（单一数据源）
-      // 使用动态 import 避免循环依赖，同步回退到 localStorage
-      try {
-        const { useSettingsStore } = await import('./settings') as typeof import('./settings')
-        const settingsStore = useSettingsStore()
-        if (settingsStore.api.enableDebug !== undefined) {
-          config.value.enableDebug = settingsStore.api.enableDebug
-        }
-      } catch {
-        // settingsStore 可能尚未初始化，回退到 localStorage
-        const chatlogSettings = localStorage.getItem('chatlog-settings')
-        if (chatlogSettings) {
-          const parsed = JSON.parse(chatlogSettings)
-          if (parsed.enableDebug !== undefined) {
-            config.value.enableDebug = parsed.enableDebug
-          }
-        }
+      // 从 settingsStore 获取 enableDebug（单一数据源）
+      if (settingsStore.api.enableDebug !== undefined) {
+        config.value.enableDebug = settingsStore.api.enableDebug
       }
     } catch (err) {
       console.error('Failed to load settings:', err)
     }
   }
 
-  /**
-   * 保存设置
-   */
   function saveSettings() {
     try {
       localStorage.setItem('app-settings', JSON.stringify(settings.value))
@@ -217,11 +165,44 @@ export const useAppStore = defineStore('app', () => {
 
   /**
    * 更新设置
+   * 重叠字段（theme, language, showMediaResources, enableServerPinning）写入 settingsStore
+   * 非重叠字段写入 app-settings
    */
-  function updateSettings(newSettings: Partial<UserSettings>) {
-    const oldTheme = settings.value.theme
-    settings.value = { ...settings.value, ...newSettings }
-    saveSettings()
+  function updateSettings(newSettings: Partial<AppOnlySettings & {
+    theme?: string
+    language?: string
+    showMediaResources?: boolean
+    disableServerPinning?: boolean
+  }>) {
+    const oldTheme = settingsStore.appearance.theme
+
+    // 重叠字段 → settingsStore
+    if (newSettings.theme !== undefined) {
+      settingsStore.appearance.theme = newSettings.theme
+    }
+    if (newSettings.language !== undefined) {
+      settingsStore.appearance.language = newSettings.language
+    }
+    if (newSettings.showMediaResources !== undefined) {
+      settingsStore.chat.showMediaResources = newSettings.showMediaResources
+    }
+    if (newSettings.disableServerPinning !== undefined) {
+      settingsStore.chat.enableServerPinning = !newSettings.disableServerPinning
+    }
+
+    // 非重叠字段 → app settings
+    const appOnlyUpdates: Partial<AppOnlySettings> = {}
+    let hasAppOnlyUpdates = false
+    for (const key of Object.keys(newSettings) as (keyof AppOnlySettings)[]) {
+      if (key in settings.value) {
+        (appOnlyUpdates as any)[key] = newSettings[key]
+        hasAppOnlyUpdates = true
+      }
+    }
+    if (hasAppOnlyUpdates) {
+      settings.value = { ...settings.value, ...appOnlyUpdates }
+      saveSettings()
+    }
 
     // 如果更新了主题，重新设置监听器并应用主题
     if (newSettings.theme && newSettings.theme !== oldTheme) {
@@ -230,19 +211,14 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  /**
-   * 设置系统主题监听器
-   */
   function setupThemeListener() {
-    // 移除旧的监听器
     if (systemThemeMediaQuery && systemThemeListener) {
       systemThemeMediaQuery.removeEventListener('change', systemThemeListener)
       systemThemeMediaQuery = null
       systemThemeListener = null
     }
 
-    // 如果是 auto 模式，添加新的监听器
-    if (settings.value.theme === 'auto') {
+    if (settingsStore.appearance.theme === 'auto') {
       systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
       systemThemeListener = () => {
         applyTheme()
@@ -251,19 +227,13 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  /**
-   * 切换主题
-   */
   function toggleTheme() {
     const themes: Array<'light' | 'dark' | 'auto'> = ['light', 'dark', 'auto']
-    const currentIndex = themes.indexOf(settings.value.theme)
+    const currentIndex = themes.indexOf(settingsStore.appearance.theme as any)
     const nextIndex = (currentIndex + 1) % themes.length
     updateSettings({ theme: themes[nextIndex] })
   }
 
-  /**
-   * 应用主题
-   */
   function applyTheme() {
     const html = document.documentElement
     if (isDark.value) {
@@ -273,29 +243,18 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  /**
-   * 检测移动端
-   */
   function checkMobile() {
     const wasMobile = isMobile.value
     isMobile.value = window.innerWidth <= 768
-    
-    // 从移动端切换到PC端时，重置移动端状态
     if (wasMobile && !isMobile.value) {
       resetMobileNavigation()
     }
   }
 
-  /**
-   * 切换侧边栏
-   */
   function toggleSidebar() {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
-  /**
-   * 导航到详情页（移动端）
-   */
   function navigateToDetail(view: NavigationStackItem['view'], params?: NavigationStackItem['params']) {
     if (!isMobile.value) return
 
@@ -314,9 +273,6 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  /**
-   * 返回上一页（移动端）
-   */
   function navigateBack() {
     if (!isMobile.value || navigationStack.value.length <= 1) return
 
@@ -335,16 +291,11 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  /**
-   * 切换主视图（移动端底部标签栏）
-   */
   function switchMobileView(view: string) {
     if (!isMobile.value) return
 
     setActiveNav(view)
-    
-    // 只在有二级页面时才重置导航栈
-    // 避免不必要的状态清空，提升切换性能
+
     if (navigationStack.value.length > 1) {
       resetMobileNavigation()
     }
@@ -354,9 +305,6 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  /**
-   * 重置移动端导航状态
-   */
   function resetMobileNavigation() {
     navigationStack.value = [{ view: 'sessionList' }]
     showMessageList.value = false
@@ -365,56 +313,34 @@ export const useAppStore = defineStore('app', () => {
     currentMobileContactId.value = undefined
   }
 
-  /**
-   * 检查是否可以返回
-   */
   function canNavigateBack() {
     return isMobile.value && navigationStack.value.length > 1
   }
 
-  /**
-   * 设置激活的导航项
-   */
   function setActiveNav(nav: string) {
     activeNav.value = nav
   }
 
-  /**
-   * 设置加载状态
-   */
   function setLoading(key: keyof typeof loading.value, value: boolean) {
     loading.value[key] = value
   }
 
-  /**
-   * 设置错误
-   */
   function setError(err: Error | null) {
     error.value = err
   }
 
-  /**
-   * 清除错误
-   */
   function clearError() {
     error.value = null
   }
 
-  /**
-   * 重置状态
-   */
   function $reset() {
     settings.value = {
-      theme: 'light',
-      language: 'zh-CN',
       fontSize: 'medium',
       messageDensity: 'comfortable',
       enterToSend: true,
       autoPlayVoice: false,
       showMessagePreview: true,
       timeFormat: '24h',
-      showMediaResources: true,
-      disableServerPinning: false,
     }
     sidebarCollapsed.value = false
     activeNav.value = 'chat'
@@ -455,6 +381,7 @@ export const useAppStore = defineStore('app', () => {
     updateSettings,
     toggleTheme,
     applyTheme,
+    setupThemeListener,
     checkMobile,
     toggleSidebar,
     setActiveNav,

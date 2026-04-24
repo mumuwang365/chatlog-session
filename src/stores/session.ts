@@ -9,11 +9,13 @@ import type { SessionParams } from '@/types/api'
 import type { SessionFilterType } from '@/types'
 import type { Contact } from '@/types/contact'
 import { useAppStore } from './app'
+import { useSettingsStore } from './settings'
 import { useContactStore } from './contact'
 import { useSessionSearch } from './sessionSearch'
 
 export const useSessionStore = defineStore('session', () => {
   const appStore = useAppStore()
+  const settingsStore = useSettingsStore()
   const contactStore = useContactStore()
 
   // ==================== State ====================
@@ -100,7 +102,7 @@ export const useSessionStore = defineStore('session', () => {
     return map
   })
 
-  const disableServerPinning = computed(() => appStore.settings.disableServerPinning)
+  const disableServerPinning = computed(() => !settingsStore.chat.enableServerPinning)
 
   const search = useSessionSearch({
     sessions,
@@ -159,7 +161,7 @@ export const useSessionStore = defineStore('session', () => {
    */
   const pinnedSessions = computed(() => {
     return filteredSessions.value.filter(
-      s => s.isLocalPinned || (!appStore.settings.disableServerPinning && s.isPinned)
+      s => s.isLocalPinned || (settingsStore.chat.enableServerPinning && s.isPinned)
     )
   })
 
@@ -168,7 +170,7 @@ export const useSessionStore = defineStore('session', () => {
    */
   const unpinnedSessions = computed(() => {
     return filteredSessions.value.filter(
-      s => !(s.isLocalPinned || (!appStore.settings.disableServerPinning && s.isPinned))
+      s => !(s.isLocalPinned || (settingsStore.chat.enableServerPinning && s.isPinned))
     )
   })
 
