@@ -88,20 +88,28 @@ export async function batchEnsureContactIndexesAsync(
 }
 
 /**
- * 联系人分组和排序
- * @param contacts 联系人列表
- * @param skipIndexCalculation 是否跳过索引计算（如果已经计算过）
- * @returns 分组后的联系人列表
+ * 组内排序逻辑
  */
-export function groupAndSortContacts(contacts: Contact[], skipIndexCalculation: boolean = false): ContactGroup[] {
-  // 1. 确保所有联系人都有索引信息（仅在需要时计算）
-  if (!skipIndexCalculation) {
-    batchEnsureContactIndexes(contacts)
-  }
+function sortGroupContacts(group: Contact[]): void {
+  group.sort((a, b) => {
+    if (a.pinyinInitial === '⭐') {
+      const timeA = a.starredAt || 0
+      const timeB = b.starredAt || 0
+      if (timeA !== timeB) {
+        return timeB - timeA
+      }
+    }
+    const nameA = a.remark || a.nickname || ''
+    const nameB = b.remark || b.nickname || ''
+    return compareContactNames(nameA, nameB)
+  })
+}
 
-  // 2. 按索引字母分组
+/**
+ * 按索引字母分组
+ */
+function buildGroupMap(contacts: Contact[]): Record<string, Contact[]> {
   const groupMap: Record<string, Contact[]> = {}
-
   contacts.forEach(contact => {
     const key = contact.pinyinInitial!
     if (!groupMap[key]) {
@@ -109,69 +117,57 @@ export function groupAndSortContacts(contacts: Contact[], skipIndexCalculation: 
     }
     groupMap[key].push(contact)
   })
+  return groupMap
+}
 
-  // 3. 组内排序
-  Object.values(groupMap).forEach(group => {
-    group.sort((a, b) => {
-      // 星标分组按星标时间倒序
-      if (a.pinyinInitial === '⭐') {
-        const timeA = a.starredAt || 0
-        const timeB = b.starredAt || 0
-        if (timeA !== timeB) {
-          return timeB - timeA // 最新星标在前
-        }
-      }
+/**
+ * 从分组 Map 构建分组对象数组
+ */
+function buildGroupList(groupMap: Record<string, Contact[]>): ContactGroup[] {
+  // 组内排序
+  Object.values(groupMap).forEach(sortGroupContacts)
 
-      // 其他分组按排序键（拼音或字母）
-      const nameA = a.remark || a.nickname || ''
-      const nameB = b.remark || b.nickname || ''
-      return compareContactNames(nameA, nameB)
-    })
-  })
-
-  // 4. 构建分组对象数组
   const result: ContactGroup[] = []
 
-  // 星标分组（如果存在）
   if (groupMap['⭐']) {
     result.push({
-      type: 'starred',
-      key: '⭐',
-      label: '星标朋友',
-      count: groupMap['⭐'].length,
-      contacts: groupMap['⭐'],
-      sortOrder: 0
+      type: 'starred', key: '⭐', label: '星标朋友',
+      count: groupMap['⭐'].length, contacts: groupMap['⭐'], sortOrder: 0
     })
   }
 
-  // 字母分组 A-Z
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
   letters.forEach((letter, index) => {
     if (groupMap[letter]) {
       result.push({
-        type: 'letter',
-        key: letter,
-        label: letter,
-        count: groupMap[letter].length,
-        contacts: groupMap[letter],
-        sortOrder: index + 1
+        type: 'letter', key: letter, label: letter,
+        count: groupMap[letter].length, contacts: groupMap[letter], sortOrder: index + 1
       })
     }
   })
 
-  // # 分组（如果存在）
   if (groupMap['#']) {
     result.push({
-      type: 'special',
-      key: '#',
-      label: '#',
-      count: groupMap['#'].length,
-      contacts: groupMap['#'],
-      sortOrder: 27
+      type: 'special', key: '#', label: '#',
+      count: groupMap['#'].length, contacts: groupMap['#'], sortOrder: 27
     })
   }
 
   return result
+}
+
+/**
+ * 联系人分组和排序
+ * @param contacts 联系人列表
+ * @param skipIndexCalculation 是否跳过索引计算（如果已经计算过）
+ * @returns 分组后的联系人列表
+ */
+export function groupAndSortContacts(contacts: Contact[], skipIndexCalculation: boolean = false): ContactGroup[] {
+  if (!skipIndexCalculation) {
+    batchEnsureContactIndexes(contacts)
+  }
+  const groupMap = buildGroupMap(contacts)
+  return buildGroupList(groupMap)
 }
 
 /**
@@ -184,82 +180,9 @@ export async function groupAndSortContactsAsync(
   contacts: Contact[],
   onProgress?: (processed: number, total: number) => void
 ): Promise<ContactGroup[]> {
-  // 1. 异步批量计算索引信息
   await batchEnsureContactIndexesAsync(contacts, 500, onProgress)
-
-  // 2. 按索引字母分组
-  const groupMap: Record<string, Contact[]> = {}
-
-  contacts.forEach(contact => {
-    const key = contact.pinyinInitial!
-    if (!groupMap[key]) {
-      groupMap[key] = []
-    }
-    groupMap[key].push(contact)
-  })
-
-  // 3. 组内排序
-  Object.values(groupMap).forEach(group => {
-    group.sort((a, b) => {
-      // 星标分组按星标时间倒序
-      if (a.pinyinInitial === '⭐') {
-        const timeA = a.starredAt || 0
-        const timeB = b.starredAt || 0
-        if (timeA !== timeB) {
-          return timeB - timeA // 最新星标在前
-        }
-      }
-
-      // 其他分组按排序键（拼音或字母）
-      const nameA = a.remark || a.nickname || ''
-      const nameB = b.remark || b.nickname || ''
-      return compareContactNames(nameA, nameB)
-    })
-  })
-
-  // 4. 构建分组对象数组
-  const result: ContactGroup[] = []
-
-  // 星标分组（如果存在）
-  if (groupMap['⭐']) {
-    result.push({
-      type: 'starred',
-      key: '⭐',
-      label: '星标朋友',
-      count: groupMap['⭐'].length,
-      contacts: groupMap['⭐'],
-      sortOrder: 0
-    })
-  }
-
-  // 字母分组 A-Z
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
-  letters.forEach((letter, index) => {
-    if (groupMap[letter]) {
-      result.push({
-        type: 'letter',
-        key: letter,
-        label: letter,
-        count: groupMap[letter].length,
-        contacts: groupMap[letter],
-        sortOrder: index + 1
-      })
-    }
-  })
-
-  // # 分组（如果存在）
-  if (groupMap['#']) {
-    result.push({
-      type: 'special',
-      key: '#',
-      label: '#',
-      count: groupMap['#'].length,
-      contacts: groupMap['#'],
-      sortOrder: 27
-    })
-  }
-
-  return result
+  const groupMap = buildGroupMap(contacts)
+  return buildGroupList(groupMap)
 }
 
 /**
