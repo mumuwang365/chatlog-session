@@ -4,6 +4,7 @@
  */
 
 import { request } from '@/utils/request'
+import { BaseAPI } from './base'
 import type { Message, MessageResponse } from '@/types/message'
 import type { ChatlogParams, SearchParams } from '@/types/api'
 
@@ -154,7 +155,11 @@ function getDateRange(startDate: Date, endDate: Date): string {
 /**
  * 聊天记录 API 类
  */
-class ChatlogAPI {
+class ChatlogAPI extends BaseAPI<MessageResponse, Message> {
+  protected resourcePath = 'chatlog'
+
+  protected transform = transformMessage
+
   /**
    * 获取聊天记录
    * GET /api/v1/chatlog
@@ -163,7 +168,7 @@ class ChatlogAPI {
    * @returns 消息列表
    */
   async getChatlog(params: ChatlogParams): Promise<Message[]> {
-    const responses = await request.get<MessageResponse[]>('/api/v1/chatlog', params)
+    const responses = await request.get<MessageResponse[]>(this.resourceUrl, params)
     return transformMessages(responses)
   }
 
@@ -175,7 +180,7 @@ class ChatlogAPI {
    * @returns 搜索结果
    */
   async searchMessages(params: SearchParams): Promise<Message[]> {
-    const responses = await request.get<MessageResponse[]>('/api/v1/chatlog', params)
+    const responses = await request.get<MessageResponse[]>(this.resourceUrl, params)
     return transformMessages(responses)
   }
 
@@ -187,7 +192,7 @@ class ChatlogAPI {
    * @returns JSON 格式的聊天记录
    */
   async exportJSON(params: ChatlogParams): Promise<Message[]> {
-    const responses = await request.get<MessageResponse[]>('/api/v1/chatlog', {
+    const responses = await request.get<MessageResponse[]>(this.resourceUrl, {
       ...params,
       format: 'json',
     })
