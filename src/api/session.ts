@@ -4,6 +4,7 @@
  */
 
 import { request } from '@/utils/request'
+import { BaseAPI } from './base'
 import type { Session } from '@/types/session'
 import type { SessionParams } from '@/types/api'
 
@@ -118,7 +119,11 @@ function transformSession(apiData: SessionApiResponse): Session {
 /**
  * 会话 API 类
  */
-class SessionAPI {
+class SessionAPI extends BaseAPI<SessionApiResponse, Session> {
+  protected resourcePath = 'session'
+
+  protected transform = transformSession
+
   /**
    * 获取会话列表
    * GET /api/v1/session
@@ -127,22 +132,9 @@ class SessionAPI {
    * @returns 会话列表和总数
    */
   async getSessions(params?: SessionParams): Promise<SessionListResponse> {
-    const response = await request.get<ApiResponse<SessionApiResponse>>('/api/v1/session', params)
-
-    let items: Session[] = []
-    let total = 0
-
-    // 转换数据格式
-    if (response && response.items && Array.isArray(response.items)) {
-      items = response.items.map(item => transformSession(item))
-      total = response.total || items.length
-    } else if (Array.isArray(response)) {
-      // 兼容旧格式（如果直接返回数组）
-      items = (response as any[]).map(item => transformSession(item))
-      total = items.length
-    }
-
-    return { items, total }
+    const response = await request.get<unknown>(this.resourceUrl, params)
+    const { items, total } = this.normalizeItemsWithTotal(response)
+    return { items: this.transformAll(items), total }
   }
 
   /**
@@ -153,10 +145,7 @@ class SessionAPI {
    * @returns 会话详情
    */
   async getSessionDetail(talker: string): Promise<Session> {
-    const response = await request.get<SessionApiResponse>(
-      `/api/v1/session/${encodeURIComponent(talker)}`
-    )
-    return transformSession(response)
+    return this.getDetail(talker)
   }
 
   /**
