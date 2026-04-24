@@ -27,14 +27,15 @@ class MediaAPI {
     if(path){
       return this.getDataUrl(path)
     }
-    return `${this.baseURL}/image/${encodeURIComponent(id)}`
+    return ''
   }
 
   /**
    * 获取缩略图 URL
    * GET /image/:id?thumbnail=true
    *
-   * @param id 图片 ID
+   * @param id 图片 ID（与 path 互斥：提供 id 时通过 API 获取，提供 path 时直接访问数据文件）
+   * @param path 数据文件路径（与 id 互斥：优先使用 path）
    * @returns 缩略图 URL
    */
   getThumbnailUrl(id: string, path?: string): string {
