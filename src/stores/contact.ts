@@ -922,13 +922,12 @@ export const useContactStore = defineStore('contact', () => {
   }
 
   /**
-   * 跳转到指定首字母
+   * 跳转到指定首字母（设置 scrollTargetLetter，由组件执行 DOM 滚动）
    */
+  const scrollTargetLetter = ref<string | null>(null)
+
   function jumpToLetter(letter: string) {
-    const element = document.getElementById(`contact-letter-${letter}`)
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+    scrollTargetLetter.value = letter
   }
 
   /**
@@ -1037,6 +1036,7 @@ export const useContactStore = defineStore('contact', () => {
     getBatchContactDetails,
     getFirstLetter,
     jumpToLetter,
+    scrollTargetLetter,
     clearSearch,
     clearFilter,
     clearError,
