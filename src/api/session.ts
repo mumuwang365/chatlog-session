@@ -5,32 +5,8 @@
 
 import { request } from '@/utils/request'
 import { BaseAPI } from './base'
-import type { Session } from '@/types/session'
+import type { Session, SessionApiResponse } from '@/types/session'
 import type { SessionParams } from '@/types/api'
-
-/**
- * 后端返回的会话数据结构
- */
-interface SessionApiResponse {
-  userName: string // 用户ID/会话ID
-  nOrder: number // 排序序号/时间戳
-  nickName: string // 昵称
-  content: string // 最后消息内容
-  nTime: string // 最后消息时间 (ISO 8601格式)
-  avatarUrl?: string // 头像URL
-  parentRef?: string // 父引用
-  nUnReadCount?: number // 未读数
-  isPinned?: boolean // 是否置顶
-  isMinimized?: boolean // 是否最小化
-}
-
-/**
- * API 响应包装器
- */
-interface ApiResponse<T> {
-  items: T[]
-  total?: number
-}
 
 /**
  * 会话列表响应

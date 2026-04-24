@@ -5,33 +5,9 @@
 
 import { request } from '@/utils/request'
 import { BaseAPI } from './base'
-import type { Contact } from '@/types/contact'
+import type { Contact, BackendContact } from '@/types/contact'
 import { ContactType } from '@/types/contact'
 import type { ContactParams } from '@/types/api'
-
-/**
- * 后端返回的联系人数据结构
- */
-interface BackendContact {
-  userName: string
-  alias: string
-  remark: string
-  nickName: string
-  isFriend: boolean
-  isPinned?: boolean
-  isMinimized?: boolean
-  bigHeadImgUrl?: string
-  smallHeadImgUrl?: string
-  headImgMd5?: string
-}
-
-/**
- * 后端返回的联系人列表响应
- */
-interface BackendContactResponse {
-  items: BackendContact[]
-  total?: number
-}
 
 /**
  * 根据 username 生成头像 URL

@@ -55,3 +55,19 @@ export enum SessionSortType {
   Name = 'name',
   Unread = 'unread',
 }
+
+/**
+ * 后端返回的会话数据结构
+ */
+export interface SessionApiResponse {
+  userName: string
+  nOrder: number
+  nickName: string
+  content: string
+  nTime: string
+  avatarUrl?: string
+  parentRef?: string
+  nUnReadCount?: number
+  isPinned?: boolean
+  isMinimized?: boolean
+}

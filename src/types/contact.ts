@@ -113,3 +113,19 @@ export interface ChatroomUserApiItem {
   userName: string
   displayName: string
 }
+
+/**
+ * 后端返回的联系人数据结构
+ */
+export interface BackendContact {
+  userName: string
+  alias: string
+  remark: string
+  nickName: string
+  isFriend: boolean
+  isPinned?: boolean
+  isMinimized?: boolean
+  bigHeadImgUrl?: string
+  smallHeadImgUrl?: string
+  headImgMd5?: string
+}
