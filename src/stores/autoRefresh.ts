@@ -306,10 +306,15 @@ export const useAutoRefreshStore = defineStore('autoRefresh', {
         if (appStore.isDebug) {
           console.log(`⏳ Task already running, waiting...`)
         }
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            clearInterval(checkInterval)
+            reject(new Error(`refreshOne timeout: task for ${talker} still running after 30s`))
+          }, 30000)
           const checkInterval = setInterval(() => {
             if (task.status !== RefreshStatus.RUNNING) {
               clearInterval(checkInterval)
+              clearTimeout(timeout)
               const cacheStore = useMessageCacheStore()
               resolve(cacheStore.get(talker))
             }
