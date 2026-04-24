@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { getVersion, getBuildDate, getVersionInfo } from '@/utils/version'
 import { downloadJSON, downloadText, downloadMarkdown } from '@/utils/download'
+import { formatBackupAsText, formatBackupAsMarkdown } from '@/utils/message-format'
 import { chatlogAPI } from '@/api/chatlog'
 import {
   ApiSettings,
@@ -338,62 +339,6 @@ const handleExportData = async () => {
     console.error('导出数据失败:', error)
     ElMessage.error('导出失败，请重试')
   }
-}
-
-// 格式化备份数据为文本
-const formatBackupAsText = (data: any): string => {
-  const lines: string[] = []
-  lines.push(`备份时间: ${data.exportTime}`)
-  lines.push(`会话数量: ${data.sessions.length}`)
-  lines.push('='.repeat(50))
-
-  for (const session of data.sessions) {
-    lines.push(`\n【${session.sessionName}】(${session.messageCount} 条消息)`)
-    lines.push('-'.repeat(50))
-
-    for (const msg of session.messages) {
-      const time = new Date(msg.time).toLocaleString('zh-CN')
-      const sender = msg.senderName || msg.sender
-      const content = msg.content || '[非文本消息]'
-      lines.push(`[${time}] ${sender}: ${content}`)
-    }
-  }
-
-  return lines.join('\n')
-}
-
-// 格式化备份数据为 Markdown
-const formatBackupAsMarkdown = (data: any): string => {
-  const lines: string[] = []
-  lines.push(`# Chatlog Session 数据备份`)
-  lines.push('')
-  lines.push(`**备份时间:** ${data.exportTime}`)
-  lines.push(`**会话数量:** ${data.sessions.length}`)
-  lines.push('')
-  lines.push('---')
-  lines.push('')
-
-  for (const session of data.sessions) {
-    lines.push(`## ${session.sessionName}`)
-    lines.push('')
-    lines.push(`**消息数量:** ${session.messageCount}`)
-    lines.push('')
-
-    for (const msg of session.messages) {
-      const time = new Date(msg.time).toLocaleString('zh-CN')
-      const sender = msg.senderName || msg.sender
-      const content = msg.content || '[非文本消息]'
-
-      lines.push(`**${sender}** *${time}*`)
-      lines.push('')
-      lines.push(content)
-      lines.push('')
-      lines.push('---')
-      lines.push('')
-    }
-  }
-
-  return lines.join('\n')
 }
 
 // 清除缓存

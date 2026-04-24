@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import dayjs from 'dayjs'
 import { chatlogAPI } from '@/api/chatlog'
 import { downloadJSON, downloadText, downloadMarkdown } from '@/utils/download'
+import { formatMessagesAsText, formatMessagesAsMarkdown } from '@/utils/message-format'
 import type { Message } from '@/types'
 
 /**
@@ -348,72 +348,6 @@ async function exportMessages(messages: Message[]) {
       )
       break
   }
-}
-
-/**
- * 将消息格式化为文本
- */
-function formatMessagesAsText(messages: Message[]): string {
-  const lines = messages.map(msg => {
-    const time = dayjs(msg.time).format('YYYY-MM-DD HH:mm:ss')
-    const sender = msg.senderName || msg.sender
-    const content = msg.content || '[非文本消息]'
-    return `[${time}] ${sender}: ${content}`
-  })
-
-  return lines.join('\n')
-}
-
-/**
- * 将消息格式化为 Markdown
- */
-function formatMessagesAsMarkdown(messages: Message[], sessionName: string): string {
-  const lines: string[] = []
-
-  // 添加标题
-  lines.push(`# ${sessionName} 聊天记录`)
-  lines.push('')
-  lines.push(`**导出时间:** ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`)
-  lines.push(`**消息数量:** ${messages.length} 条`)
-  lines.push('')
-  lines.push('---')
-  lines.push('')
-
-  // 按日期分组
-  let currentDate = ''
-
-  for (const msg of messages) {
-    const msgDate = dayjs(msg.time).format('YYYY-MM-DD')
-    const msgTime = dayjs(msg.time).format('HH:mm:ss')
-    const sender = msg.senderName || msg.sender
-
-    // 如果日期变化，添加日期标题
-    if (msgDate !== currentDate) {
-      currentDate = msgDate
-      lines.push(`## ${msgDate}`)
-      lines.push('')
-    }
-
-    // 添加消息
-    const isSelf = msg.isSelf ? '**自己**' : sender
-    const content = msg.content || '[非文本消息]'
-
-    lines.push(`**${isSelf}** *${msgTime}*`)
-    lines.push('')
-    lines.push(content)
-    lines.push('')
-
-    // 如果有媒体文件，添加链接
-    if (msg.fileUrl) {
-      lines.push(`[📎 附件: ${msg.fileName || '媒体文件'}](${msg.fileUrl})`)
-      lines.push('')
-    }
-
-    lines.push('---')
-    lines.push('')
-  }
-
-  return lines.join('\n')
 }
 
 /**
