@@ -14,7 +14,7 @@ export type StorageType = 'local' | 'session'
 export interface StorageOptions {
   type?: StorageType
   expire?: number // 过期时间（秒）
-  encrypt?: boolean // 是否加密
+  encrypt?: boolean // 是否加密（已废弃，保留接口兼容）
 }
 
 /**
@@ -51,7 +51,7 @@ class Storage {
    */
   set<T>(key: string, value: T, options: StorageOptions = {}): void {
     try {
-      const { type = 'local', expire, encrypt = false } = options
+      const { type = 'local', expire } = options
       const storage = this.getStorage(type)
       const fullKey = this.getKey(key)
 
@@ -61,14 +61,7 @@ class Storage {
         expire: expire ? Date.now() + expire * 1000 : undefined,
       }
 
-      let stringValue = JSON.stringify(data)
-
-      // 简单加密（生产环境应使用更安全的加密方法）
-      if (encrypt) {
-        stringValue = this.encrypt(stringValue)
-      }
-
-      storage.setItem(fullKey, stringValue)
+      storage.setItem(fullKey, JSON.stringify(data))
     } catch (error) {
       console.error(`Failed to set storage ${key}:`, error)
     }
@@ -79,17 +72,12 @@ class Storage {
    */
   get<T>(key: string, options: StorageOptions = {}): T | null {
     try {
-      const { type = 'local', encrypt = false } = options
+      const { type = 'local' } = options
       const storage = this.getStorage(type)
       const fullKey = this.getKey(key)
 
-      let stringValue = storage.getItem(fullKey)
+      const stringValue = storage.getItem(fullKey)
       if (!stringValue) return null
-
-      // 解密
-      if (encrypt) {
-        stringValue = this.decrypt(stringValue)
-      }
 
       const data: StorageData<T> = JSON.parse(stringValue)
 
@@ -183,32 +171,6 @@ class Storage {
     } catch (error) {
       console.error('Failed to get storage size:', error)
       return 0
-    }
-  }
-
-  /**
-   * 简单加密（Base64）
-   * 注意：这只是简单的编码，不是真正的加密
-   * 生产环境应使用更安全的加密算法
-   */
-  private encrypt(str: string): string {
-    try {
-      return btoa(encodeURIComponent(str))
-    } catch (error) {
-      console.error('Encrypt failed:', error)
-      return str
-    }
-  }
-
-  /**
-   * 简单解密（Base64）
-   */
-  private decrypt(str: string): string {
-    try {
-      return decodeURIComponent(atob(str))
-    } catch (error) {
-      console.error('Decrypt failed:', error)
-      return str
     }
   }
 
