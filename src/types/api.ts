@@ -85,27 +85,6 @@ export interface ApiConfig {
 }
 
 /**
- * HTTP 方法枚举
- */
-export enum HttpMethod {
-  GET = 'GET',
-  POST = 'POST',
-  PUT = 'PUT',
-  DELETE = 'DELETE',
-  PATCH = 'PATCH',
-}
-
-/**
- * 请求状态枚举
- */
-export enum RequestStatus {
-  Idle = 'idle',
-  Loading = 'loading',
-  Success = 'success',
-  Error = 'error',
-}
-
-/**
  * 时间范围接口
  */
 export interface TimeRange {
