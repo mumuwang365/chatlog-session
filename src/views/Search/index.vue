@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useSearchStore } from '@/stores/search'
 import { useSessionStore } from '@/stores/session'
 import { useContactStore } from '@/stores/contact'
+import { useDisplayName } from '@/composables/useDisplayName'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowRight } from '@element-plus/icons-vue'
@@ -18,6 +19,7 @@ import type { Message, Contact, Session } from '@/types'
 const searchStore = useSearchStore()
 const sessionStore = useSessionStore()
 const contactStore = useContactStore()
+const { getSessionDisplayName, preloadSessionNames, displayNameCache: sessionDisplayNames } = useDisplayName()
 const router = useRouter()
 const route = useRoute()
 
@@ -25,9 +27,6 @@ const route = useRoute()
 const searchText = ref('')
 const searchType = ref<SearchType>('chatroom')
 const selectedSessionId = ref<string>('')
-
-// 会话显示名称缓存
-const sessionDisplayNames = ref<Map<string, string>>(new Map())
 
 // 初始化默认时间范围（最近一年）
 const getDefaultDateRange = (): [Date, Date] => {
@@ -47,30 +46,6 @@ const hasResults = computed(() => searchStore.hasResults)
 
 // 可用的会话列表（用于会话内搜索）
 const availableSessions = computed(() => sessionStore.sessions)
-
-// 获取会话的显示名称
-const getSessionDisplayName = async (session: Session): Promise<string> => {
-  // 先从缓存中获取
-  if (sessionDisplayNames.value.has(session.id)) {
-    return sessionDisplayNames.value.get(session.id)!
-  }
-
-  // 尝试从 contact store 获取
-  try {
-    const displayName = await contactStore.getContactDisplayName(session.id)
-    if (displayName && displayName !== session.id) {
-      sessionDisplayNames.value.set(session.id, displayName)
-      return displayName
-    }
-  } catch (err) {
-    console.warn('获取会话显示名称失败:', session.id, err)
-  }
-
-  // 使用默认名称
-  const defaultName = session.name || session.talkerName || session.id
-  sessionDisplayNames.value.set(session.id, defaultName)
-  return defaultName
-}
 
 // 会话筛选的查询文本
 const sessionFilterQuery = ref('')
@@ -95,21 +70,6 @@ const filteredSessions = computed(() => {
 // 处理远程搜索
 const handleSessionFilter = (query: string) => {
   sessionFilterQuery.value = query
-}
-
-// 预加载会话显示名称
-const preloadSessionNames = async () => {
-  const sessions = availableSessions.value
-  if (sessions.length === 0) return
-
-  // 批量加载显示名称（限制并发数）
-  const batchSize = 10
-  for (let i = 0; i < sessions.length; i += batchSize) {
-    const batch = sessions.slice(i, i + batchSize)
-    await Promise.allSettled(
-      batch.map(session => getSessionDisplayName(session))
-    )
-  }
 }
 
 // 执行搜索
@@ -230,7 +190,7 @@ watch(dateRange, (newRange) => {
 // 组件挂载时处理 URL 参数和预加载
 onMounted(async () => {
   // 预加载会话显示名称
-  await preloadSessionNames()
+  await preloadSessionNames(availableSessions.value)
 
   // 从 URL 参数中获取搜索条件
   const queryType = route.query.type as SearchType | undefined

@@ -3,7 +3,8 @@ import { ref, computed, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useContactStore } from '@/stores/contact'
 import { useChatroomStore } from '@/stores/chatroom'
-import { useDisplayName } from '@/components/chat/composables/useDisplayName'
+import { useDisplayName as useDisplayNameReactive } from '@/components/chat/composables/useDisplayName'
+import { useDisplayName } from '@/composables/useDisplayName'
 import MobileNavBar from '@/components/layout/MobileNavBar.vue'
 import Avatar from '@/components/common/Avatar.vue'
 import type { Contact } from '@/types'
@@ -31,7 +32,7 @@ const chatroomDetail = ref<Chatroom | null>(null)
 const chatroomLoading = ref(false)
 
 // 群主显示名称
-const { displayName: ownerDisplayName } = useDisplayName({
+const { displayName: ownerDisplayName } = useDisplayNameReactive({
   id: computed(() => chatroomDetail.value?.owner),
   defaultName: computed(() => chatroomDetail.value?.owner),
 })
@@ -160,41 +161,19 @@ const remainingMemberCount = computed(() => {
   return total > 10 ? total - 10 : 0
 })
 
-// 获取成员显示名称（使用 contactStore）
-const getMemberDisplayName = async (wxid: string) => {
-  try {
-    const name = await contactStore.getContactDisplayName(wxid)
-    return name || wxid
-  } catch (err) {
-    console.warn('获取成员显示名称失败:', wxid, err)
-    return wxid
-  }
-}
-
-// 成员显示名称映射
-const memberDisplayNames = ref<Map<string, string>>(new Map())
+// 使用统一的 useDisplayName composable 获取成员显示名称
+const {
+  getMemberDisplayName,
+  getMemberDisplayNameSync,
+  displayNameCache: memberDisplayNames,
+  preloadMemberNames,
+} = useDisplayName()
 
 // 加载成员显示名称
 const loadMemberDisplayNames = async () => {
   if (!chatroomDetail.value?.members) return
-  
   memberDisplayNames.value.clear()
-  
-  // 批量获取成员显示名称
-  const promises = chatroomDetail.value.members.slice(0, 10).map(async (member) => {
-    const name = await getMemberDisplayName(member.wxid)
-    memberDisplayNames.value.set(member.wxid, name)
-  })
-  
-  await Promise.all(promises)
-}
-
-// 获取成员显示名称（同步）
-const getMemberDisplayNameSync = (member: ChatroomMember) => {
-  return memberDisplayNames.value.get(member.wxid) || 
-         member.displayName || 
-         member.nickname || 
-         member.wxid
+  await preloadMemberNames(chatroomDetail.value.members.slice(0, 10))
 }
 
 // 刷新群聊详情
