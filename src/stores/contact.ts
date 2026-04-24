@@ -10,6 +10,7 @@ import { useAppStore } from './app'
 import { db } from '@/utils/db'
 
 import { groupAndSortContacts, generateIndexList, filterContacts } from '@/utils/contact-grouping'
+import { pinyin } from 'pinyin-pro'
 
 export const useContactStore = defineStore('contact', () => {
   const appStore = useAppStore()
@@ -904,20 +905,15 @@ export const useContactStore = defineStore('contact', () => {
   }
 
   /**
-   * 获取中文拼音首字母（简化版）
+   * 获取中文拼音首字母（使用 pinyin-pro）
    */
   function getPinyinFirstLetter(char: string): string {
-    // 这是一个简化的实现，实际项目中应该使用专业的拼音库
-    // 这里只做示例，返回基于 Unicode 的粗略映射
-    const code = char.charCodeAt(0)
-
-    if (code >= 0x4e00 && code <= 0x9fa5) {
-      // 简单的 Unicode 范围映射
-      const offset = code - 0x4e00
-      const letterIndex = Math.floor(offset / ((0x9fa5 - 0x4e00) / 26))
-      return String.fromCharCode(65 + Math.min(letterIndex, 25))
-    }
-
+    try {
+      const result = pinyin(char, { pattern: 'first', toneType: 'none' })
+      if (result && result.length > 0) {
+        return result.charAt(0).toUpperCase()
+      }
+    } catch {}
     return '#'
   }
 
