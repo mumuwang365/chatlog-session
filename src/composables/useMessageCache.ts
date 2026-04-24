@@ -3,7 +3,7 @@
  * 提供消息缓存和自动刷新的便捷接口
  */
 
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useMessageCacheStore } from '@/stores/messageCache'
 import { useAutoRefreshStore } from '@/stores/autoRefresh'
 import type { Message } from '@/types/message'
@@ -144,10 +144,6 @@ export function useMessageCache(talker: string, options: CacheOptions = {}) {
     if (immediate && autoRefresh && refreshStore.config.enabled) {
       markNeedsRefresh()
     }
-  })
-
-  onUnmounted(() => {
-    // 清理
   })
 
   return {
