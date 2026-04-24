@@ -4,6 +4,7 @@
  */
 
 import { request } from '@/utils/request'
+import { BaseAPI } from './base'
 import type { Chatroom, ChatroomApiResponse, ChatroomApiItem } from '@/types/contact'
 import { db } from '@/utils/db'
 
@@ -28,7 +29,11 @@ function transformChatroom(backendChatroom: ChatroomApiItem): Chatroom {
 /**
  * 群聊 API 类
  */
-class ChatroomAPI {
+class ChatroomAPI extends BaseAPI<ChatroomApiItem, Chatroom> {
+  protected resourcePath = 'chatroom'
+
+  protected transform = transformChatroom
+
   /**
    * 获取群聊列表
    * GET /api/v1/chatroom?format=json
@@ -56,7 +61,7 @@ class ChatroomAPI {
       format: 'json',
     }
 
-    const response = await request.get<ChatroomApiResponse>('/api/v1/chatroom', params)
+    const response = await request.get<ChatroomApiResponse>(this.resourceUrl, params)
 
     // 转换数据
     const chatrooms = (response.items || []).map(transformChatroom)
@@ -94,7 +99,7 @@ class ChatroomAPI {
       format: 'json',
     }
 
-    const response = await request.get<ChatroomApiResponse>('/api/v1/chatroom', params)
+    const response = await request.get<ChatroomApiResponse>(this.resourceUrl, params)
     const chatrooms = (response.items || []).map(transformChatroom)
     const chatroom = chatrooms.find(c => c.chatroomId === chatroomId)
 
@@ -155,7 +160,7 @@ class ChatroomAPI {
       format: 'json',
     }
 
-    const response = await request.get<ChatroomApiResponse>('/api/v1/chatroom', params)
+    const response = await request.get<ChatroomApiResponse>(this.resourceUrl, params)
     const chatrooms = (response.items || []).map(transformChatroom)
 
     // 保存到 IndexedDB
