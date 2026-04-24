@@ -13,10 +13,10 @@ export enum ContactType {
  */
 export interface Contact {
   wxid: string
-  nickname: string
-  remark: string
-  alias: string
-  avatar: string
+  nickname?: string
+  remark?: string
+  alias?: string
+  avatar?: string
   type: ContactType
   gender?: number
   province?: string
