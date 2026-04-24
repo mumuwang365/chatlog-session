@@ -946,27 +946,17 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * 跳转到指定消息
+   * 跳转到指定消息（设置 scrollTargetId，由组件执行 DOM 滚动）
    */
+  const scrollTargetId = ref<number | null>(null)
+
   async function jumpToMessage(messageId: number) {
     const message = getMessageById(messageId)
     if (!message) {
-      // 如果消息不在当前列表中，需要加载包含该消息的页面
-      // TODO: 实现按消息 ID 定位并加载
       console.warn('Message not found in current list:', messageId)
       return
     }
-
-    // 滚动到消息位置
-    const element = document.getElementById(`message-${messageId}`)
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      // 高亮显示
-      element.classList.add('highlight')
-      setTimeout(() => {
-        element.classList.remove('highlight')
-      }, 2000)
-    }
+    scrollTargetId.value = messageId
   }
 
   /**
@@ -1240,6 +1230,7 @@ export const useChatStore = defineStore('chat', () => {
     getMessageById,
     getMessageIndex,
     jumpToMessage,
+    scrollTargetId,
     selectMessage,
     deselectMessage,
     toggleMessageSelection,
