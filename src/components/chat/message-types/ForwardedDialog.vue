@@ -85,15 +85,18 @@ const getMessageIcon = (dataType: string): string => {
   return iconMap[dataType] || MessageIconMap[dataType] || 'QuestionFilled'
 }
 
-// 获取图片 URL（使用头像占位或实际图片）
+// 获取图片 URL（FullMD5 优先，CDNDataURL 兜底）
 const getImageUrl = (item: ForwardedDataItem): string => {
   if (item.FullMD5) {
     return mediaAPI.getImageUrl(item.FullMD5)
   }
+  if (item.CDNDataURL) {
+    return item.CDNDataURL
+  }
   return ''
 }
 
-// 获取缩略图 URL
+// 获取缩略图 URL（ThumbFullMD5 优先，CDNThumbURL 兜底）
 const getThumbnailUrl = (item: ForwardedDataItem): string => {
   if (item.ThumbFullMD5) {
     return mediaAPI.getThumbnailUrl(item.ThumbFullMD5)
@@ -101,31 +104,45 @@ const getThumbnailUrl = (item: ForwardedDataItem): string => {
   if (item.FullMD5) {
     return mediaAPI.getThumbnailUrl(item.FullMD5)
   }
+  if (item.CDNThumbURL) {
+    return item.CDNThumbURL
+  }
+  if (item.CDNDataURL) {
+    return item.CDNDataURL
+  }
   return ''
 }
 
 const getVideoUrl = (item: ForwardedDataItem): string => {
-  if (!item.FullMD5) return ''
-  return mediaAPI.getVideoUrl(item.FullMD5)
+  if (item.FullMD5) {
+    return mediaAPI.getVideoUrl(item.FullMD5)
+  }
+  if (item.CDNDataURL) {
+    return item.CDNDataURL
+  }
+  return ''
 }
 
 const getVoiceUrl = (item: ForwardedDataItem): string => {
   if (item.FullMD5) {
     return mediaAPI.getVoiceUrl(item.FullMD5)
   }
+  if (item.CDNDataURL) {
+    return item.CDNDataURL
+  }
   return ''
 }
 
 const canPlayVoice = (item: ForwardedDataItem): boolean => {
-  return item.DataType === '34' && Boolean(item.FullMD5)
+  return item.DataType === '34' && Boolean(item.FullMD5 || item.CDNDataURL)
 }
 
 const canDownloadFile = (item: ForwardedDataItem): boolean => {
-  return item.DataType === '8' && Boolean(item.FullMD5)
+  return item.DataType === '8' && Boolean(item.FullMD5 || item.CDNDataURL)
 }
 
 const canPreviewVideo = (item: ForwardedDataItem): boolean => {
-  return ['4', '5', '43'].includes(item.DataType) && Boolean(item.FullMD5)
+  return ['4', '5', '43'].includes(item.DataType) && Boolean(item.FullMD5 || item.CDNDataURL)
 }
 
 const canOpenLocation = (item: ForwardedDataItem): boolean => {
