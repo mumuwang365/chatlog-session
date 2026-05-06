@@ -8,6 +8,7 @@ import ContactView from './Contact/index.vue'
 import SearchView from './Search/index.vue'
 import SettingsView from './Settings/index.vue'
 import MobileTabBar from '@/components/layout/MobileTabBar.vue'
+import logoUrl from '/logo.svg?url'
 
 const DashboardView = defineAsyncComponent(() => import('./Dashboard/index.vue'))
 
@@ -94,9 +95,7 @@ const CurrentViewComponent = computed(() => {
     <!-- 左侧导航栏（PC端） -->
     <aside v-if="!appStore.isMobile" class="sidebar">
       <div class="sidebar-header">
-        <el-icon size="24" color="#07c160">
-          <ChatLineSquare />
-        </el-icon>
+        <img :src="logoUrl" alt="logo" class="sidebar-logo" />
       </div>
 
       <div class="sidebar-nav">
@@ -231,6 +230,11 @@ const CurrentViewComponent = computed(() => {
     justify-content: center;
     border-bottom: 1px solid var(--el-border-color-lighter);
     flex-shrink: 0;
+
+    .sidebar-logo {
+      width: 36px;
+      height: 36px;
+    }
   }
 
   .sidebar-nav {
