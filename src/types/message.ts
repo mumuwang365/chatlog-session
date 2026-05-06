@@ -22,6 +22,7 @@ export enum MessageType {
  * 富文本消息子类型枚举
  */
 export enum RichMessageSubType {
+  Text = 1,
   QQMusic = 3,
   VideoLink = 4,
   Link = 5,

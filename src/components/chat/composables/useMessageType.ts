@@ -49,7 +49,9 @@ export function useMessageType(message: Message) {
     () => message.type === MessageType.File && message.subType === RichMessageSubType.Refer
   )
   const isLinkMessage = computed(
-    () => message.type === MessageType.File && message.subType === RichMessageSubType.Link
+    () =>
+      message.type === MessageType.File &&
+      (message.subType === RichMessageSubType.Link || message.subType === RichMessageSubType.Text)
   )
   const isForwardedMessage = computed(
     () => message.type === MessageType.File && message.subType === RichMessageSubType.Forwarded

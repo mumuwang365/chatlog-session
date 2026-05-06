@@ -173,7 +173,13 @@ export function useMessageUrl(message: Message) {
 
   // 链接相关
   const linkTitle = computed(() => message.contents?.title || '链接')
-  const linkUrl = computed(() => message.contents?.url || message.fileUrl || '')
+  const linkUrl = computed(() => {
+    // subType=1 时 URL 存放在 contents.title，contents.url 为空
+    if (message.subType === RichMessageSubType.Text) {
+      return message.contents?.title || message.contents?.url || message.fileUrl || ''
+    }
+    return message.contents?.url || message.fileUrl || ''
+  })
 
   // 转发消息相关
   const forwardedTitle = computed(() => message.contents?.title || '聊天记录')

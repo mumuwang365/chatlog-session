@@ -173,6 +173,29 @@ export const MESSAGE_TYPE_CONFIGS: MessageTypeConfig[] = [
 
   {
     type: MessageType.File,
+    subType: RichMessageSubType.Text,
+    name: '链接',
+    icon: 'Link',
+    placeholder: '[链接]',
+    component: 'LinkMessage',
+    priority: 90,
+    // subType=1 时 contents.title 存放的是 URL，contents.url 为空
+    propsMapper: (msg, ctx) => {
+      const url = msg.contents?.title || msg.contents?.url || msg.fileUrl || ''
+      let title = '链接'
+      try {
+        if (url) title = new URL(url).hostname
+      } catch {}
+      return {
+        linkTitle: title,
+        linkUrl: url,
+        showMediaResources: ctx.showMediaResources,
+      }
+    },
+  },
+
+  {
+    type: MessageType.File,
     subType: RichMessageSubType.VideoLink,
     name: '视频链接',
     icon: 'VideoPlay',
