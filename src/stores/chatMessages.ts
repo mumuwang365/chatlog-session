@@ -182,10 +182,6 @@ export const useChatMessagesStore = defineStore('chatMessages', () => {
     return undefined
   }
 
-  const getChronologicalMessages = () => {
-    return normalizeBatchToChronological(messages.value, appStore.isDebug)
-  }
-
   const assertHistoryAnchorProgress = (
     previousBeforeTime: string | number,
     nextBeforeTime: string | number | undefined,

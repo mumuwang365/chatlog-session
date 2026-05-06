@@ -143,9 +143,9 @@ const handleExportData = async () => {
         return
       }
 
-      const exportData: Record<string, any> = {
+      const exportData = {
         exportTime: new Date().toISOString(),
-        sessions: [],
+        sessions: [] as Array<{ sessionId: string; sessionName: string; messageCount: number; messages: any[] }>,
       }
 
       for (const session of sessions.slice(0, 10)) {

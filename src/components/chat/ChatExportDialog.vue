@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useChatExportStore } from '@/stores/chatExport'
-import type { ExportStage, ExportFormat, TimeRangeType } from '@/stores/chatExport'
 
 /**
  * Props 接口

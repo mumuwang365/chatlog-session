@@ -2,7 +2,7 @@
 interface AppearanceSettingsData {
   theme: string
   language: string
-  fontSize: string
+  fontSize: number
 }
 
 const props = defineProps<{
@@ -86,7 +86,7 @@ const handleThemeChange = (val: string | number | boolean | undefined) => {
           :model-value="modelValue.fontSize"
           @update:model-value="
             (val: string | number | boolean | undefined) =>
-              val !== undefined && updateValue('fontSize', String(val))
+              val !== undefined && updateValue('fontSize', Number(val))
           "
         >
           <el-radio-button

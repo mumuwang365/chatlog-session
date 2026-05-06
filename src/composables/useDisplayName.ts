@@ -5,13 +5,11 @@
 
 import { ref } from 'vue'
 import { useContactStore } from '@/stores/contact'
-import { useChatroomStore } from '@/stores/chatroom'
 import type { Contact, Chatroom } from '@/types/contact'
 import type { Session } from '@/types/session'
 
 export function useDisplayName() {
   const contactStore = useContactStore()
-  const chatroomStore = useChatroomStore()
 
   // 显示名称缓存
   const displayNameCache = ref<Map<string, string>>(new Map())
@@ -29,7 +27,7 @@ export function useDisplayName() {
    * 优先级：remark > nickname > chatroomId
    */
   function getChatroomDisplayName(chatroom: Chatroom): string {
-    return chatroom.remark || chatroom.nickname || chatroom.chatroomId || '未知群聊'
+    return chatroom.name || chatroom.chatroomId || '未知群聊'
   }
 
   /**

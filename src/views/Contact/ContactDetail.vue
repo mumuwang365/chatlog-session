@@ -8,7 +8,7 @@ import { useDisplayName } from '@/composables/useDisplayName'
 import MobileNavBar from '@/components/layout/MobileNavBar.vue'
 import Avatar from '@/components/common/Avatar.vue'
 import type { Contact } from '@/types'
-import type { Chatroom, ChatroomMember } from '@/types/contact'
+import type { Chatroom } from '@/types/contact'
 import { ContactType } from '@/types/contact'
 import type { Session } from '@/types/session'
 
@@ -154,7 +154,6 @@ const remainingMemberCount = computed(() => {
 
 // 使用统一的 useDisplayName composable 获取成员显示名称
 const {
-  getMemberDisplayName,
   getMemberDisplayNameSync,
   displayNameCache: memberDisplayNames,
   preloadMemberNames,

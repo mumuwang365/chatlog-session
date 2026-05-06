@@ -6,8 +6,7 @@
 import { formatFileSize as formatBytes } from './format'
 
 import { useMessageCacheStore } from '@/stores/messageCache'
-import { useAutoRefreshStore, RefreshStatus } from '@/stores/autoRefresh'
-import type { Message } from '@/types/message'
+import { useAutoRefreshStore } from '@/stores/autoRefresh'
 
 /**
  * 调试信息接口

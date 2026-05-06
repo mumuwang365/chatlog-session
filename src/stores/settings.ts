@@ -5,7 +5,7 @@
  * 替代 Settings/index.vue 中手动 localStorage 逻辑
  */
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 
 // ==================== 类型定义 ====================
 

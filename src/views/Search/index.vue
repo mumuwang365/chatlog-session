@@ -2,7 +2,6 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useSearchStore } from '@/stores/search'
 import { useSessionStore } from '@/stores/session'
-import { useContactStore } from '@/stores/contact'
 import { useDisplayName } from '@/composables/useDisplayName'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -18,8 +17,7 @@ import type { Message, Contact, Session } from '@/types'
 
 const searchStore = useSearchStore()
 const sessionStore = useSessionStore()
-const contactStore = useContactStore()
-const { getSessionDisplayName, preloadSessionNames, displayNameCache: sessionDisplayNames } = useDisplayName()
+const { preloadSessionNames, displayNameCache: sessionDisplayNames } = useDisplayName()
 const router = useRouter()
 const route = useRoute()
 

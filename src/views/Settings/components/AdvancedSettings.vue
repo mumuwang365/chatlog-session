@@ -1,7 +1,7 @@
 <script setup lang="ts">
 interface AdvancedSettingsData {
   enableDebug: boolean
-  cacheSize: string
+  cacheSize: number
 }
 
 const props = defineProps<{

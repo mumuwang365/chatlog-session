@@ -4,7 +4,6 @@ import { ElMessage } from 'element-plus'
 import { useAppStore } from '@/stores/app'
 import { useSessionStore } from '@/stores/session'
 import { useChatMessagesStore } from '@/stores/chatMessages'
-import { useChatExportStore } from '@/stores/chatExport'
 import { useAutoRefreshManager } from '@/composables/useAutoRefreshManager'
 import { useMobileGesture } from '@/composables/useMobileGesture'
 import { useMobileSessionInfo } from '@/composables/useMobileSessionInfo'
@@ -24,7 +23,6 @@ import type { Session, SessionFilterType } from '@/types'
 const appStore = useAppStore()
 const sessionStore = useSessionStore()
 const chatMessagesStore = useChatMessagesStore()
-const chatExportStore = useChatExportStore()
 
 // 引用
 const sessionListRef = ref()

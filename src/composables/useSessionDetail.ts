@@ -45,7 +45,7 @@ export function useSessionDetail(currentSession: () => Session | null) {
     }
 
     // 查找匹配的联系人
-    const matchedContact = contactStore.contacts.find(c => c.wxid === sessionDetailContactId.value)
+    contactStore.contacts.find(c => c.wxid === sessionDetailContactId.value)
 
     sessionDetailDrawerVisible.value = true
   }
