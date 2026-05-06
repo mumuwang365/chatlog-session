@@ -11,14 +11,16 @@ import {
 } from '@element-plus/icons-vue'
 import { request } from '@/utils/request'
 
+interface ImageItem {
+  imageUrl: string
+  thumbUrl?: string
+}
+
 interface Props {
   visible: boolean
   imageUrl: string
   thumbUrl?: string
-  imageList?: Array<{
-    imageUrl: string
-    thumbUrl?: string
-  }>
+  imageList?: ImageItem[]
   initialIndex?: number
   title?: string
 }
@@ -32,97 +34,57 @@ const emit = defineEmits<{
   close: []
 }>()
 
+// ==================== 视图状态 ====================
 const scale = ref(1)
 const rotate = ref(0)
 const loading = ref(true)
 const currentImageUrl = ref('')
 const currentIndex = ref(0)
-
-// Live Photo / 视频兼容状态
-const resourceType = ref<'image' | 'video' | 'unknown'>('unknown')
-const isImage = ref(true) // 当前是否尝试作为图片显示
-const imageError = ref(false)
-const videoError = ref(false)
-const isVideoReady = ref(false)
+const isVideoMode = ref(false)
+const hdLoading = ref(false)
+const hdLoadFailed = ref(false)
+// 图片/视频加载结果（用于 Live Photo 兼容）
+const imageOk = ref(false)
+const videoOk = ref(false)
 
 const showDialog = computed({
   get: () => props.visible,
   set: value => emit('update:visible', value),
 })
 
-const normalizedImageList = computed(() => {
-  const list = props.imageList || []
-  const sanitized = list.filter(item => Boolean(item?.imageUrl || item?.thumbUrl))
-  if (sanitized.length > 0) {
-    return sanitized
-  }
-
-  return [
-    {
-      imageUrl: props.imageUrl,
-      thumbUrl: props.thumbUrl,
-    },
-  ]
+// ==================== 列表计算 ====================
+const normalizedList = computed<ImageItem[]>(() => {
+  const list = (props.imageList || []).filter(i => i?.imageUrl || i?.thumbUrl)
+  return list.length > 0 ? list : [{ imageUrl: props.imageUrl, thumbUrl: props.thumbUrl }]
 })
 
-const currentItem = computed(() => {
-  const list = normalizedImageList.value
-  if (list.length === 0) return undefined
-  return list[currentIndex.value] || list[0]
-})
-
+const currentItem = computed(() => normalizedList.value[currentIndex.value] || normalizedList.value[0])
 const canGoPrev = computed(() => currentIndex.value > 0)
-const canGoNext = computed(() => currentIndex.value < normalizedImageList.value.length - 1)
-const isShowingHd = computed(() => {
-  const hdImageUrl = currentItem.value?.imageUrl || props.imageUrl
-  return Boolean(hdImageUrl && currentImageUrl.value === hdImageUrl)
-})
-const isShowingThumb = computed(() => {
-  const thumbUrl = currentItem.value?.thumbUrl
-  return Boolean(thumbUrl && currentImageUrl.value === thumbUrl)
-})
-const hdLoading = ref(false)
-const hdLoadFailed = ref(false)
+const canGoNext = computed(() => currentIndex.value < normalizedList.value.length - 1)
+
+const hdUrl = computed(() => currentItem.value?.imageUrl || props.imageUrl)
+const thumbUrl = computed(() => currentItem.value?.thumbUrl)
+
 const qualityLabel = computed(() => {
-  if (isShowingHd.value) return '高清图'
-  if (isShowingThumb.value) return '预览小图'
+  if (isVideoMode.value) return 'Live Photo'
+  if (currentImageUrl.value === hdUrl.value) return '高清图'
+  if (currentImageUrl.value === thumbUrl.value) return '预览小图'
   return '图片预览'
 })
 
-const transformStyle = computed(() => {
-  return {
-    transform: `scale(${scale.value}) rotate(${rotate.value}deg)`,
-    transition: 'transform 0.3s ease',
-  }
-})
+const transformStyle = computed(() => ({
+  transform: `scale(${scale.value}) rotate(${rotate.value}deg)`,
+  transition: 'transform 0.3s ease',
+}))
 
+// ==================== 操作 ====================
 const handleClose = () => {
   showDialog.value = false
   emit('close')
 }
 
-const handleZoomIn = () => {
-  if (scale.value < 3) {
-    scale.value = Math.min(scale.value + 0.25, 3)
-  }
-}
-
-const handleZoomOut = () => {
-  if (scale.value > 0.5) {
-    scale.value = Math.max(scale.value - 0.25, 0.5)
-  }
-}
-
-const handleRotateLeft = () => {
-  rotate.value -= 90
-}
-
-const handleRotateRight = () => {
-  rotate.value += 90
-}
-
 const handleDownload = async () => {
-  const url = currentItem.value?.imageUrl || props.imageUrl
+  const url = hdUrl.value
   if (!url) return
   try {
     const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15)
@@ -132,90 +94,65 @@ const handleDownload = async () => {
   }
 }
 
+const switchToIndex = (index: number) => {
+  if (index < 0 || index >= normalizedList.value.length) return
+  currentIndex.value = index
+  resetAndLoad()
+}
+
+// ==================== 加载逻辑 ====================
+const tryShowVideo = () => {
+  if (videoOk.value && !imageOk.value) {
+    isVideoMode.value = true
+    loading.value = false
+  }
+}
+
 const handleImageLoad = () => {
-  if (resourceType.value === 'video') return
-  resourceType.value = 'image'
-  isImage.value = true
+  if (isVideoMode.value) return
+  imageOk.value = true
   loading.value = false
 }
 
 const handleImageError = () => {
-  const hdImageUrl = currentItem.value?.imageUrl || props.imageUrl
-  const thumbUrl = currentItem.value?.thumbUrl
-
-  if (thumbUrl && currentImageUrl.value === thumbUrl && hdImageUrl) {
-    currentImageUrl.value = hdImageUrl
-    return
-  }
-
-  imageError.value = true
-  isImage.value = false // 切换尝试视频
-
-  if (isVideoReady.value) {
-    resourceType.value = 'video'
-    loading.value = false
-  } else if (videoError.value) {
-    loading.value = false // 都失败了
-  }
+  imageOk.value = false
+  tryShowVideo()
+  if (!videoOk.value) loading.value = false
 }
 
 const handleVideoLoad = () => {
-  isVideoReady.value = true
-  // 如果图片已经失败，则显示视频
-  if (imageError.value) {
-    resourceType.value = 'video'
-    loading.value = false
-  }
+  videoOk.value = true
+  tryShowVideo()
 }
 
 const handleVideoError = () => {
-  videoError.value = true
-  if (imageError.value) {
-    loading.value = false // 都失败了
-  }
+  videoOk.value = false
+  if (!imageOk.value) loading.value = false
 }
 
-const resetTransform = () => {
+const resetAndLoad = () => {
+  // 重置所有状态
   scale.value = 1
   rotate.value = 0
-}
-
-const initCurrentImage = () => {
-  const hdImageUrl = currentItem.value?.imageUrl || props.imageUrl
-  const thumbUrl = currentItem.value?.thumbUrl
-  currentImageUrl.value = thumbUrl || hdImageUrl
-}
-
-const setupIndex = () => {
-  const list = normalizedImageList.value
-  if (list.length === 0) {
-    currentIndex.value = 0
-    return
-  }
-
-  const target = props.initialIndex ?? 0
-  const safeIndex = Number.isInteger(target) ? Math.min(Math.max(target, 0), list.length - 1) : 0
-  currentIndex.value = safeIndex
-}
-
-const resetState = () => {
   loading.value = true
-  imageError.value = false
-  videoError.value = false
-  isVideoReady.value = false
-  isImage.value = true
-  resourceType.value = 'unknown'
+  isVideoMode.value = false
   hdLoading.value = false
   hdLoadFailed.value = false
-  initCurrentImage()
-  resetTransform()
+  imageOk.value = false
+  videoOk.value = false
+
+  // 先显示缩略图
+  currentImageUrl.value = thumbUrl.value || hdUrl.value
+
+  // 后台加载高清图
+  loadHdInBackground()
 }
 
-const loadHdImageInBackground = () => {
-  const hdImageUrl = currentItem.value?.imageUrl || props.imageUrl
-  const thumbUrl = currentItem.value?.thumbUrl
+const loadHdInBackground = () => {
+  const hd = hdUrl.value
+  const thumb = thumbUrl.value
 
-  if (!thumbUrl || !hdImageUrl || thumbUrl === hdImageUrl) {
+  if (!thumb || !hd || thumb === hd) {
     hdLoading.value = false
     return
   }
@@ -223,83 +160,58 @@ const loadHdImageInBackground = () => {
   hdLoading.value = true
   hdLoadFailed.value = false
 
+  const stillValid = () => props.visible && currentIndex.value < normalizedList.value.length
+
+  // 先尝试作为图片加载
   const img = new Image()
   img.onload = () => {
-    if (!props.visible) return
-    if (currentIndex.value >= normalizedImageList.value.length) return
-    currentImageUrl.value = hdImageUrl
+    if (!stillValid()) return
+    currentImageUrl.value = hd
     hdLoading.value = false
-    hdLoadFailed.value = false
   }
   img.onerror = () => {
-    // 高清图加载失败时保持低清图显示
-    hdLoading.value = false
-    hdLoadFailed.value = true
-  }
-  img.src = hdImageUrl
-}
-
-const switchToIndex = (index: number) => {
-  const list = normalizedImageList.value
-  if (list.length === 0) return
-  if (index < 0 || index >= list.length) return
-
-  currentIndex.value = index
-  resetState()
-  loadHdImageInBackground()
-}
-
-const handlePrev = () => {
-  if (!canGoPrev.value) return
-  switchToIndex(currentIndex.value - 1)
-}
-
-const handleNext = () => {
-  if (!canGoNext.value) return
-  switchToIndex(currentIndex.value + 1)
-}
-
-// 重置变换当对话框关闭时
-watch(
-  () => props.visible,
-  visible => {
-    if (visible) {
-      setupIndex()
-      resetState()
-      loadHdImageInBackground()
+    // 可能是 Live Photo (video/mp4)，尝试视频
+    const video = document.createElement('video')
+    video.onloadedmetadata = () => {
+      if (!stillValid()) return
+      currentImageUrl.value = hd
+      isVideoMode.value = true
+      imageOk.value = false
+      videoOk.value = true
+      loading.value = false
+      hdLoading.value = false
     }
+    video.onerror = () => {
+      hdLoading.value = false
+      hdLoadFailed.value = true
+    }
+    video.src = hd
   }
-)
+  img.src = hd
+}
 
-// 键盘快捷键
+// ==================== 键盘 ====================
 const handleKeydown = (e: KeyboardEvent) => {
   if (!props.visible) return
-
-  switch (e.key) {
-    case 'Escape':
-      handleClose()
-      break
-    case '+':
-    case '=':
-      handleZoomIn()
-      break
-    case '-':
-      handleZoomOut()
-      break
-    case 'ArrowLeft':
-      handlePrev()
-      break
-    case 'ArrowRight':
-      handleNext()
-      break
+  const keyMap: Record<string, () => void> = {
+    Escape: handleClose,
+    '+': () => { if (scale.value < 3) scale.value = Math.min(scale.value + 0.25, 3) },
+    '=': () => { if (scale.value < 3) scale.value = Math.min(scale.value + 0.25, 3) },
+    '-': () => { if (scale.value > 0.5) scale.value = Math.max(scale.value - 0.25, 0.5) },
+    ArrowLeft: () => { if (canGoPrev.value) switchToIndex(currentIndex.value - 1) },
+    ArrowRight: () => { if (canGoNext.value) switchToIndex(currentIndex.value + 1) },
   }
+  keyMap[e.key]?.()
 }
 
-// 监听键盘事件
+// ==================== 生命周期 ====================
 watch(
   () => props.visible,
   visible => {
     if (visible) {
+      const target = props.initialIndex ?? 0
+      currentIndex.value = Math.min(Math.max(target, 0), normalizedList.value.length - 1)
+      resetAndLoad()
       document.addEventListener('keydown', handleKeydown)
     } else {
       document.removeEventListener('keydown', handleKeydown)
@@ -322,24 +234,22 @@ watch(
     <div class="image-viewer">
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-mask">
-        <el-icon class="is-loading">
-          <Loading />
-        </el-icon>
+        <el-icon class="is-loading"><Loading /></el-icon>
         <span>加载中...</span>
       </div>
 
       <!-- 媒体容器 -->
       <div class="image-container">
-        <!-- 加载失败提示 -->
-        <div v-if="imageError && videoError" class="error-state">
+        <!-- 加载失败 -->
+        <div v-if="!imageOk && !videoOk" class="error-state">
           <el-icon class="error-icon"><WarningFilled /></el-icon>
           <span>资源加载失败</span>
         </div>
 
         <!-- 图片 -->
         <img
-          v-show="isImage && !imageError"
-          :src="currentImageUrl || currentItem?.imageUrl || imageUrl"
+          v-show="!isVideoMode && imageOk"
+          :src="currentImageUrl || hdUrl"
           :style="transformStyle"
           class="viewer-image"
           loading="lazy"
@@ -347,10 +257,10 @@ watch(
           @error="handleImageError"
         />
 
-        <!-- 视频 (兼容 Live Photo) -->
+        <!-- 视频 (Live Photo) -->
         <video
-          v-show="!isImage && isVideoReady"
-          :src="currentItem?.imageUrl || imageUrl"
+          v-show="isVideoMode && videoOk"
+          :src="hdUrl"
           :style="transformStyle"
           class="viewer-image"
           controls
@@ -366,29 +276,28 @@ watch(
       <!-- 工具栏 -->
       <div class="toolbar">
         <el-button-group>
-          <el-button :disabled="!canGoPrev" @click="handlePrev">上一张</el-button>
-          <el-button :disabled="!canGoNext" @click="handleNext">下一张</el-button>
+          <el-button :disabled="!canGoPrev" @click="switchToIndex(currentIndex - 1)">上一张</el-button>
+          <el-button :disabled="!canGoNext" @click="switchToIndex(currentIndex + 1)">下一张</el-button>
         </el-button-group>
 
         <el-button-group class="ml-2">
-          <el-button :icon="ZoomOut" :disabled="scale <= 0.5" @click="handleZoomOut">
+          <el-button :icon="ZoomOut" :disabled="scale <= 0.5" @click="scale = Math.max(scale - 0.25, 0.5)">
             缩小
           </el-button>
-          <el-button @click="resetTransform"> {{ Math.round(scale * 100) }}% </el-button>
-          <el-button :icon="ZoomIn" :disabled="scale >= 3" @click="handleZoomIn"> 放大 </el-button>
+          <el-button @click="scale = 1; rotate = 0"> {{ Math.round(scale * 100) }}% </el-button>
+          <el-button :icon="ZoomIn" :disabled="scale >= 3" @click="scale = Math.min(scale + 0.25, 3)"> 放大 </el-button>
         </el-button-group>
 
         <el-button-group class="ml-2">
-          <el-button :icon="RefreshLeft" @click="handleRotateLeft"> 左转 </el-button>
-          <el-button :icon="RefreshRight" @click="handleRotateRight"> 右转 </el-button>
+          <el-button :icon="RefreshLeft" @click="rotate -= 90"> 左转 </el-button>
+          <el-button :icon="RefreshRight" @click="rotate += 90"> 右转 </el-button>
         </el-button-group>
 
         <el-button :icon="Download" class="ml-2" @click="handleDownload"> 下载 </el-button>
-
         <el-button :icon="Close" class="ml-2" type="info" @click="handleClose"> 关闭 </el-button>
       </div>
 
-      <!-- 快捷键提示 -->
+      <!-- 状态提示 -->
       <div class="shortcuts-hint">
         <div class="preview-status">
           <el-tag size="small" effect="plain">{{ qualityLabel }}</el-tag>
@@ -424,10 +333,7 @@ watch(
 
   .loading-mask {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -514,7 +420,6 @@ watch(
   }
 }
 
-// 响应式设计
 @media (max-width: 768px) {
   .image-viewer {
     .image-container {
@@ -546,7 +451,6 @@ watch(
   }
 }
 
-// 暗黑模式
 .dark-mode {
   .image-viewer-dialog {
     :deep(.el-dialog__body) {

@@ -104,13 +104,13 @@ export function useMessageUrl(message: Message) {
     }
     return ''
   })
-  // 图片 URL
+  // 图片 URL（高清图，优先用 API 获取）
   const imageUrl = computed(() => {
-    if (message.content) {
-      return message.content
-    }
     if (message.contents?.md5) {
       return mediaAPI.getImageUrl(message.contents.md5, message.contents.path)
+    }
+    if (message.content) {
+      return message.content
     }
     return ''
   })
