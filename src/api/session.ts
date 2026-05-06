@@ -60,8 +60,9 @@ function transformSession(apiData: SessionApiResponse): Session {
     lastTime: apiData.nTime,
     lastMessageType: 1,
     unreadCount: apiData.nUnReadCount || 0,
-    isPinned: apiData.isPinned || false,
-    isMinimized: apiData.isMinimized || false,
+    // isPinned/isMinimized/avatar 由 contact 数据补充，session API 不返回
+    isPinned: false,
+    isMinimized: false,
     isChatRoom: isChatRoom,
     messageCount: 0, // 后端未返回消息总数
   }

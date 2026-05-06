@@ -2,7 +2,7 @@
  * 会话状态管理
  */
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { sessionAPI } from '@/api'
 import type { Session } from '@/types/session'
 import type { SessionParams } from '@/types/api'
@@ -100,6 +100,27 @@ export const useSessionStore = defineStore('session', () => {
       map.set(contact.wxid, contact)
     })
     return map
+  })
+
+  /**
+   * 从 contact 数据补充 session 的 isPinned/isMinimized/avatar
+   * session API 不返回这些字段，需要从 contact API 获取
+   */
+  function enrichSessionsFromContacts(targetSessions: Session[]) {
+    for (const session of targetSessions) {
+      const contact = contactMap.value.get(session.talker)
+      if (!contact) continue
+      if (contact.isPinned) session.isPinned = true
+      if (contact.isMinimized) session.isMinimized = true
+      if (!session.avatar && contact.avatar) session.avatar = contact.avatar
+    }
+  }
+
+  // contact 数据后续加载时，自动补充已有 sessions
+  watch(() => contactMap.value.size, () => {
+    if (sessions.value.length > 0) {
+      enrichSessionsFromContacts(sessions.value)
+    }
   })
 
   const disableServerPinning = computed(() => !settingsStore.chat.enableServerPinning)
@@ -266,6 +287,9 @@ export const useSessionStore = defineStore('session', () => {
           item.isLocalPinned = true
         }
       })
+
+      // 从 contact 数据补充 isPinned/isMinimized/avatar（session API 不返回这些字段）
+      enrichSessionsFromContacts(items)
 
       if (append) {
         sessions.value = [...sessions.value, ...items]
