@@ -125,7 +125,8 @@ const handleDownload = async () => {
   const url = currentItem.value?.imageUrl || props.imageUrl
   if (!url) return
   try {
-    await request.download(url, `image_${Date.now()}`)
+    const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15)
+    await request.download(url, `image_${ts}`)
   } catch (error) {
     console.error('下载图片失败:', error)
   }
