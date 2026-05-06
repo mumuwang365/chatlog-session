@@ -9,6 +9,7 @@ import {
   Download,
   WarningFilled,
 } from '@element-plus/icons-vue'
+import { request } from '@/utils/request'
 
 interface Props {
   visible: boolean
@@ -120,11 +121,14 @@ const handleRotateRight = () => {
   rotate.value += 90
 }
 
-const handleDownload = () => {
-  const link = document.createElement('a')
-  link.href = currentItem.value?.imageUrl || props.imageUrl
-  link.download = `image_${Date.now()}.jpg`
-  link.click()
+const handleDownload = async () => {
+  const url = currentItem.value?.imageUrl || props.imageUrl
+  if (!url) return
+  try {
+    await request.download(url, `image_${Date.now()}`)
+  } catch (error) {
+    console.error('下载图片失败:', error)
+  }
 }
 
 const handleImageLoad = () => {

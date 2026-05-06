@@ -384,10 +384,21 @@ class Request {
         responseType: 'blob',
       })
       .then((response: any) => {
-        const blob = new Blob([response])
+        const blob = response instanceof Blob ? response : new Blob([response])
+        const contentType = blob.type || ''
+
+        // 根据 content-type 推断文件后缀
+        const ext = extFromContentType(contentType)
+        let finalName = filename || 'download'
+
+        // 如果 filename 没有后缀且能从 content-type 推断，则补上
+        if (ext && !hasExt(finalName)) {
+          finalName = `${finalName}.${ext}`
+        }
+
         const link = document.createElement('a')
         link.href = window.URL.createObjectURL(blob)
-        link.download = filename || 'download'
+        link.download = finalName
         link.click()
         window.URL.revokeObjectURL(link.href)
       })
@@ -399,6 +410,68 @@ class Request {
   all<T = any>(requests: Promise<any>[]): Promise<T[]> {
     return Promise.all(requests)
   }
+}
+
+/**
+ * 常见 content-type 到文件后缀的映射
+ */
+const CONTENT_TYPE_EXT_MAP: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/bmp': 'bmp',
+  'image/svg+xml': 'svg',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov',
+  'video/x-msvideo': 'avi',
+  'audio/mpeg': 'mp3',
+  'audio/mp3': 'mp3',
+  'audio/wav': 'wav',
+  'audio/ogg': 'ogg',
+  'audio/aac': 'aac',
+  'audio/amr': 'amr',
+  'audio/silk': 'silk',
+  'application/pdf': 'pdf',
+  'application/zip': 'zip',
+  'application/x-zip-compressed': 'zip',
+  'application/gzip': 'gz',
+  'application/x-rar-compressed': 'rar',
+  'application/x-7z-compressed': '7z',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'text/plain': 'txt',
+  'text/html': 'html',
+  'text/csv': 'csv',
+  'application/json': 'json',
+  'application/xml': 'xml',
+  'application/octet-stream': '', // 通用二进制，无法推断
+}
+
+/**
+ * 从 content-type 推断文件后缀
+ */
+function extFromContentType(contentType: string): string {
+  if (!contentType) return ''
+  // 去掉 charset 等参数: "image/jpeg; charset=utf-8" → "image/jpeg"
+  const mime = contentType.split(';')[0].trim().toLowerCase()
+  return CONTENT_TYPE_EXT_MAP[mime] || ''
+}
+
+/**
+ * 检查文件名是否已有后缀
+ */
+function hasExt(filename: string): boolean {
+  const lastDot = filename.lastIndexOf('.')
+  if (lastDot === -1) return false
+  // 排除以点开头的隐藏文件
+  const ext = filename.slice(lastDot + 1).toLowerCase()
+  return ext.length > 0 && ext.length <= 5
 }
 
 /**

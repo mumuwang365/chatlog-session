@@ -7,6 +7,7 @@ import { useAppStore } from '@/stores/app'
 import { useChatMessagesStore } from '@/stores/chatMessages'
 import { useSettingsStore } from '@/stores/settings'
 import { mediaAPI } from '@/api/media'
+import { request } from '@/utils/request'
 import { useMessageUrl } from './composables/useMessageUrl'
 import { useMessageType } from './composables/useMessageType'
 import { MoreFilled } from '@element-plus/icons-vue'
@@ -243,10 +244,26 @@ const handleForwardedClick = () => {
   forwardedDialogVisible.value = true
 }
 
-const handleFileClick = () => {
-  const fileUrl = messageUrls.fileUrl.value
-  if (fileUrl) {
-    window.open(fileUrl, '_blank')
+const handleFileClick = async () => {
+  const md5 = props.message.contents?.md5
+  const fileName = messageUrls.fileName.value
+  const downloadName = fileName !== '未知文件' ? fileName : undefined
+  if (md5) {
+    try {
+      await mediaAPI.downloadFile(md5, downloadName)
+    } catch (error) {
+      console.error('下载文件失败:', error)
+    }
+  } else {
+    // 无 md5 时 fallback 到 request.download（支持 content-type 推断后缀）
+    const fileUrl = messageUrls.fileUrl.value
+    if (fileUrl) {
+      try {
+        await request.download(fileUrl, downloadName)
+      } catch (error) {
+        console.error('下载文件失败:', error)
+      }
+    }
   }
 }
 
